@@ -41,3 +41,19 @@
         		- JDK – 1.8
         		- SBT – 0.13.x
         		- Scala – 2.11
+        		
+* Define Dependencies
+
+	- Now let us define dependencies as part of build.sbt to download and use required binaries to build simple applications to produce and consume messages using Scala as programming language.
+    		- We need to import few APIs that are part of org.apache.kafka
+    		- There are several jar files under kafka
+    		- For Producer/Consumer APIs it is required to import kafka-clients
+    		- Add the dependency of relevant version in build.sbt – libraryDependencies += "org.apache.kafka" % "kafka-clients" % "1.0.0"
+
+		- $ sbt console
+		- scala> import org.apache.kafka
+		- scala> import org.apache.kafka.clients
+		- scala> import org.apache.kafka.clients.producer.{KafkaProducer,ProducerConfig,ProducerRecord}
+		- scala> import org.apache.kafka.clients.consumer.{KafkaConsumer,ConsumerConfig}
+
+* Externalize Properties        		
