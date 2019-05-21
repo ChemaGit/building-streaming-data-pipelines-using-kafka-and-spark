@@ -153,7 +153,9 @@ import com.typesafe.config.ConfigFactory
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 
 object KafkaProducerExample {
+
   def main(args: Array[String]): Unit = {
+  
     val conf = ConfigFactory.load
     val envProps = conf.getConfig(args(0))
     val props = new Properties()
@@ -167,4 +169,5 @@ object KafkaProducerExample {
     producer.send(data)
     producer.close()
   }
+  
 }       		
