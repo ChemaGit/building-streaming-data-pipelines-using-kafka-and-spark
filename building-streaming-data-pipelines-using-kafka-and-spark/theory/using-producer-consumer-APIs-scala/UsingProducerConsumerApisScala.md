@@ -56,4 +56,115 @@
 		- scala> import org.apache.kafka.clients.producer.{KafkaProducer,ProducerConfig,ProducerRecord}
 		- scala> import org.apache.kafka.clients.consumer.{KafkaConsumer,ConsumerConfig}
 
-* Externalize Properties        		
+* Externalize Properties
+
+	- We need to connect to Kafka using Kafka broker/bootstrap server. We typically connect to local broker/bootstrap server in development process and actual production cluster in production. 
+	- It is better to externalize these properties and use them at run time.
+
+
+    	- We will use com.typesafe config package to load externalized properties at run time.
+    	- Update build.sbt with appropriate dependency – libraryDependencies += "com.typesafe" % "config" % "1.3.2"
+    	- Here is the build.sbt after adding Kafka and typesafe config dependencies.
+
+name := "KafkaWorkshop"
+
+version := "0.1"
+
+scalaVersion := "2.11.12"
+
+libraryDependencies += "com.typesafe" % "config" % "1.3.2"
+
+libraryDependencies += "org.apache.kafka" % "kafka-clients" % "1.0.0"
+
+    	- There are multiple ways to externalize properties
+        	- Bundle properties related to all the environments as part of the code base/compiled jar file
+        	- Place properties file at the same location in all environments
+        	- In the former approach we need to categorize property names based on environment they are pointing to, while in later approach we have same property names but different values pointing to respective environment.
+        	- For demo purpose we will bundle the properties file along with the code.
+    	- Create resources folder under src/main
+    	- Create file by name application.properties
+    	- Add all the properties related to dev and prod. You can add more categories as well.
+
+dev.zookeeper = localhost:2181
+
+dev.bootstrap.server = localhost:9092
+
+prod.zookeeper = nn01.itversity.com:2181,nn02.itversity.com:2181,nn03.itversity.com:2181
+
+prod.bootstrap.server = wn01.itversity.com:6667,wn02.itversity.com:6667
+
+
+import com.typesafe.config.ConfigFactory
+
+object KafkaProducerExample {
+	
+	def main(args: Array[String]) : Unit = {
+		val conf = ConfigFactory.load
+		
+		// Program arguments: dev
+		val envProps = conf.getConfig(args(0))
+		println(envProps.getString("zookeeper"))
+	}
+}
+
+
+* Produce Messages – Producer API
+
+	- Now it is time to develop our first program leveraging Producer API to write messages to Kafka topic.
+	
+	- kafka-topics --zookeeper quickstart.cloudera:2181 --list
+	- cd /home/cloudera/IdeaProjects/KafkaWorkshop/building-streaming-data-pipelines-using-kafka-and-spark
+	- sbt console
+	- scala> import.java.util.Properties
+	- scala> import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
+	- scala> import com.typesafe.config.ConfigFactory
+	- scala> val props = new Properties()
+	- scala> val conf = ConfigFactory.load
+    - scala> val envProps = conf.getConfig(args(0))
+	- scala> props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, envProps.getString("bootstrap.server"))
+    - scala> props.put(ProducerConfig.CLIENT_ID_CONFIG, "KafkaProducerExample")
+    - scala> props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    - scala> props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    - scala> val producer = new KafkaProducer[String, String](props)
+    - scala> val data = new ProducerRecord[String, String]("Kafka-Testing", "Key", "Value")
+    - scala> producer.send(data)
+    - kafka-console-consumer --bootstrap-server quickstart.cloudera:9092 --topic Kafka-Testing --from-beginning
+
+    	- Right click on src/main/scala -> new -> Scala Class
+    	- Change kind to Object
+    	- Give name as KafkaProducerExample and hit enter. A new file will created with object.
+    	- Define main function
+    	- Import java.util.Properties – import java.util.Properties – it is useful to configure necessary properties while creating KafkaProducer object which can be used to produce messages into Kafka topic.
+    	- Import ConfigFactory which will be used to load the application.properties file to get Kafka broker/bootstrap server information – import com.typesafe.config.ConfigFactory
+    	- Import classes related to Producer API to write messages to Kafka topic – import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
+    	- We need ProducerConfig to get enums related to setting properties to connect to Kafka topic
+    	- Create Properties object and add properties related to broker/bootstrap servers as well as serializer to serialize messages to write into Kafka topic
+    	- Once the required properties are added we can create KafkaProducer object – val producer = new KafkaProducer[String, String](props)
+    	- We can now create ProducerRecord object by passing topic as well as key and value for the message – val data = new ProducerRecord[String, String]("Kafka-Testing", "Key", "Value")
+    	- We can send ProducerRecord objects using send API on producer (KafkaProducer object) – producer.send(data)
+    	- Once you send all the messages, make sure to close producer – producer.close()
+    	- Here is the complete code example to produce messages.
+
+
+import java.util.Properties
+
+import com.typesafe.config.ConfigFactory
+
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
+
+object KafkaProducerExample {
+  def main(args: Array[String]): Unit = {
+    val conf = ConfigFactory.load
+    val envProps = conf.getConfig(args(0))
+    val props = new Properties()
+    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, envProps.getString("bootstrap.server"))
+    props.put(ProducerConfig.CLIENT_ID_CONFIG, "KafkaProducerExample")
+    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    val producer = new KafkaProducer[String, String](props)
+
+    val data = new ProducerRecord[String, String]("Kafka-Testing", "Key", "Value")
+    producer.send(data)
+    producer.close()
+  }
+}       		
