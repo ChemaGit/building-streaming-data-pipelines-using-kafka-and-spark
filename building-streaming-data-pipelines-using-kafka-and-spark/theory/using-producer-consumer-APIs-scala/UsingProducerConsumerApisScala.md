@@ -169,5 +169,11 @@ object KafkaProducerExample {
     producer.send(data)
     producer.close()
   }
-  
-}       		
+}     
+
+
+    - sbt console  	
+    - scala> KafkaProducerExample.main(Array("dev"))
+    
+    
+* Consume Messages – Consumer API     	
