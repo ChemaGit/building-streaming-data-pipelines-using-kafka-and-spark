@@ -104,5 +104,177 @@ logMessages.foreach(message => {
   producer.send(record)
 })
 
+# ProducerRecord with Key
 
-# Now let us improvise and produce messages into Kafka Topic using key.
+	- Now let us improvise and produce messages into Kafka Topic using key.
+
+    	- When we pass the key to produce messages into the Partitioned topic, by default it will compute the hash of the key and then apply mod using the number of partitions used while creating Topic.
+    	- It will ensure all the messages using the same key always go to the same partition.
+    	- Let us go ahead and make necessary changes to grab ip address as key and then build ProducerRecord object to send it to Kafka Topic (retail_multi). 
+	- Make sure retail_multi topic is cleaned up. On Windows, Kafka gets corrupted quite often for some reason, if that is the case you can execute below script to clean up and recreate retail_multi with 4 partitions.
+
+
+kafka-topics.sh \
+  --zookeeper localhost:2181 \
+  --delete \
+  --topic retail_multi
+  
+rm -rf /tmp/kafka-logs
+
+zookeeper-shell.sh localhost:2181 rmr /admin
+zookeeper-shell.sh localhost:2181 rmr /config
+zookeeper-shell.sh localhost:2181 rmr /brokers
+
+kafka-server-start.sh -daemon /opt/kafka/config/server.properties
+
+kafka-topics.sh \
+  --zookeeper localhost:2181 \
+  --create \
+  --topic retail_multi \
+  --partitions 4 \
+--replication-factor 1
+
+
+
+    	- Selection of key is subjective to your requirement. It can be dense (like country, region etc) or sparse like (ip address)
+    	- We can validate by running kafka-console-consumer.sh to consume messages from each partition and redirected to file to understand the behavior of data distribution. 
+	- Make sure to recreate retail_multi to validate successfully.
+	- kafka-console-consumer --bootstrap-server quickstart.cloudera:9092 --topic retail_multi --from-beginning >> /home/cloudera/Documents/out.txt
+ 	- run ProducerFromFile	
+
+
+
+import java.util.Properties
+
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
+
+val props = new Properties
+props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+props.put(ProducerConfig.CLIENT_ID_CONFIG, "Produce log messages from file")
+props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+
+val producer = new KafkaProducer[String, String](props)
+
+import scala.io.Source
+val logMessages = Source.fromFile("/opt/gen_logs/logs/access.log").getLines.toList
+
+logMessages.foreach(message => {
+  val ipAddr = message.split(" ")(0)
+  val record = new ProducerRecord("retail_multi", ipAddr, message)
+  producer.send(record)
+})
+
+
+# ProducerRecord with Partition
+
+	- We can also assign a particular partition based on custom logic while producing messages into Topic
+
+    	- This is primarily useful with dense keys such as country or region.
+    	- We can either map each unique key to the different partition or define custom logic to load balance the traffic.
+    	- In scenarios like one country or region generating abnormally high traffic than others, we can have one or more partitions for that country or region and rest for other countries or regions.
+    	- We can also configure custom partitioner by using ProducerConfig.PARTITIONER_CLASS_CONFIG. This approach is useful to define reusable custom partitioning strategy with in the application.
+    	- Let us first cleanup before developing the logic. 
+	- On Windows, Kafka gets corrupted quite often for some reason, if that is the case you can execute below script to clean up and recreate retail_multi with 4 partitions.
+
+
+kafka-topics.sh \
+  --zookeeper localhost:2181 \
+  --delete \
+  --topic retail_multi
+  
+rm -rf /tmp/kafka-logs
+
+zookeeper-shell.sh localhost:2181 rmr /admin
+zookeeper-shell.sh localhost:2181 rmr /config
+zookeeper-shell.sh localhost:2181 rmr /brokers
+
+kafka-server-start.sh -daemon /opt/kafka/config/server.properties
+
+kafka-topics.sh \
+  --zookeeper localhost:2181 \
+  --create \
+  --topic retail_multi \
+  --partitions 4 \
+--replication-factor 1
+
+
+	- Now let us see an example. 
+	- As part of this program, we will extract ip address from each message and then get Country ISO code. 
+	- If it is US, we will send messages to partition 0 and for other countries, we will send to the rest of the partitions using hash mod logic with partitions as 3 (which means data will for other Countries go into partition 1, 2, and 3). 
+	- Also if there are any invalid ips, we will send it to a different topic called retail_multi_invalid. We will be using Java-based geoip2 provided by maxmind along with database with ip and country mapping.
+
+
+name := "KafkaWorkshop"
+
+version := "1.0"
+
+scalaVersion := "2.11.12"
+
+libraryDependencies += "com.typesafe" % "config" % "1.3.2"
+libraryDependencies += "org.apache.kafka" % "kafka-clients" % "1.0.0"
+libraryDependencies += "com.maxmind.geoip2" % "geoip2" % "2.12.0"
+
+
+
+import java.util.Properties
+import java.io.File
+import com.maxmind.geoip2.DatabaseReader
+import java.net.InetAddress
+
+import scala.io.Source
+import com.typesafe.config.ConfigFactory
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
+
+
+val props = new Properties()
+props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+props.put(ProducerConfig.CLIENT_ID_CONFIG, "Produce log messages from file")
+props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+
+val producer = new KafkaProducer[String, String](props)
+
+val logMessages = Source.fromFile("/opt/gen_logs/logs/access.log").getLines.toList
+
+val database = new File("/opt/maxmind/GeoLite2-Country.mmdb")
+
+val reader = new DatabaseReader.Builder(database).build
+
+logMessages.foreach(message => {
+  try {
+    val ipAddr = message.split(" ")(0)
+    val countryIsoCode = reader.
+      country(InetAddress.getByName(ipAddr)).
+      getCountry.
+      getIsoCode
+    val partitionIndex = if (countryIsoCode == "US") 0
+      else countryIsoCode.hashCode() % 3 + 1
+    val record = new ProducerRecord[String, String]("retail_multi", partitionIndex, ipAddr, message)
+    producer.send(record)
+  } catch {
+    case e: Exception => {
+      val record = new ProducerRecord[String, String]("retail_multi_invalid", message)
+      producer.send(record)
+    }
+  }
+})
+
+producer.close
+
+
+# Using ProducerConfig
+
+	- Let us see some of the additional properties from ProducerConfig that can be used for fine-tuning the performance of Producers.
+
+    	- We can use additional properties of ProducerConfig to control batch size, compressing data etc.
+    	- ProducerConfig.BATCH_SIZE_CONFIG can be used to control the batch size.
+        	- On the server on which program is running, data will be grouped based on the partition it need to send the data.
+        	- Producer will establish connection to the brokers who are leaders for corresponding partition via bootstrap servers configured as part of the program.
+        	- When batch size is reached, corresponding data will be sent to the leader of each of the partition.
+        	- Leader will then write the first copy to the log file of the partition it is managing and will send the data to other followers as well.
+    	- ProducerConfig.COMPRESSION_TYPE_CONFIG can be used to specify compression algorithm such as gzip, snappy, lz4 etc.
+    	- There are settings to fine tune send buffer, receive buffer, buffer size for the batch etc.
+
+
+# Build as Application
