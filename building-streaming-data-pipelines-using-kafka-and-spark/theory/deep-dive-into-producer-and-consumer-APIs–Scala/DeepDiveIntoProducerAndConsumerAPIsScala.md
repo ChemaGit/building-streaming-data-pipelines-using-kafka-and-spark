@@ -108,6 +108,7 @@ val logMessages = Source.
 logMessages.foreach(message => {
 
   val record = new ProducerRecord("retail_multi", message)
+  
   producer.send(record)
   
 })
