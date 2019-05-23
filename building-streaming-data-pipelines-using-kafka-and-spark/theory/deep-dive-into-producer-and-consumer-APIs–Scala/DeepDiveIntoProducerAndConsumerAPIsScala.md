@@ -212,25 +212,37 @@ version := "1.0"
 scalaVersion := "2.11.12"
 
 libraryDependencies += "com.typesafe" % "config" % "1.3.2"
+
 libraryDependencies += "org.apache.kafka" % "kafka-clients" % "1.0.0"
+
 libraryDependencies += "com.maxmind.geoip2" % "geoip2" % "2.12.0"
 
 
 
+
 import java.util.Properties
+
 import java.io.File
+
 import com.maxmind.geoip2.DatabaseReader
+
 import java.net.InetAddress
 
 import scala.io.Source
+
 import com.typesafe.config.ConfigFactory
+
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 
 
 val props = new Properties()
+
 props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+
 props.put(ProducerConfig.CLIENT_ID_CONFIG, "Produce log messages from file")
+
 props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+
 props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
 
 val producer = new KafkaProducer[String, String](props)
@@ -242,7 +254,9 @@ val database = new File("/opt/maxmind/GeoLite2-Country.mmdb")
 val reader = new DatabaseReader.Builder(database).build
 
 logMessages.foreach(message => {
+
   try {
+  
     val ipAddr = message.split(" ")(0)
     val countryIsoCode = reader.
       country(InetAddress.getByName(ipAddr)).
@@ -253,6 +267,7 @@ logMessages.foreach(message => {
     val record = new ProducerRecord[String, String]("retail_multi", partitionIndex, ipAddr, message)
     producer.send(record)
   } catch {
+  
     case e: Exception => {
       val record = new ProducerRecord[String, String]("retail_multi_invalid", message)
       producer.send(record)
