@@ -351,7 +351,9 @@ import com.typesafe.config.ConfigFactory
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 
 /**
-  * Created by itversity on 30/10/18.
+
+  *Created by itversity on 30/10/18.
+  
   */
   
 object ProduceLogMessagesFromFile {
@@ -397,7 +399,9 @@ import com.typesafe.config.ConfigFactory
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 
 /**
-  * Created by itversity on 30/10/18.
+
+  *Created by itversity on 30/10/18.
+  
   */
   
 object ProduceLogMessagesFromFileKey {
@@ -451,7 +455,9 @@ import com.typesafe.config.ConfigFactory
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 
 /**
-  * Created by itversity on 30/10/18.
+
+  *Created by itversity on 30/10/18.
+  
   */
   
 object ProduceLogMessagesFromFilePartition {
