@@ -353,6 +353,7 @@ import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, Produce
 /**
   * Created by itversity on 30/10/18.
   */
+  
 object ProduceLogMessagesFromFile {
 
   def main(args: Array[String]): Unit = {
@@ -398,6 +399,7 @@ import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, Produce
 /**
   * Created by itversity on 30/10/18.
   */
+  
 object ProduceLogMessagesFromFileKey {
 
   def main(args: Array[String]): Unit = {
@@ -451,6 +453,7 @@ import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, Produce
 /**
   * Created by itversity on 30/10/18.
   */
+  
 object ProduceLogMessagesFromFilePartition {
 
   def main(args: Array[String]): Unit = {
