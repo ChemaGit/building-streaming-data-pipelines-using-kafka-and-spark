@@ -309,3 +309,173 @@ producer.close
 
 
 # Build as Application
+
+	- As we have explored Producer APIs with REPL, now it is time for us to develop applications.
+	- Here is the code which produces messages to a partitioned topic in round robin fashion. 
+	- We will validate by consuming each partition separately to see the behavior that not all messages corresponding to the same key are stored in the same partition.
+
+
+# build.sbt
+
+name := "KafkaWorkshop"
+
+version := "1.0"
+
+scalaVersion := "2.11.12"
+
+libraryDependencies += "com.typesafe" % "config" % "1.3.2"
+
+libraryDependencies += "org.apache.kafka" % "kafka-clients" % "1.0.0"
+
+libraryDependencies += "com.maxmind.geoip2" % "geoip2" % "2.12.0"
+
+# application.properties
+
+dev.zookeeper = localhost:2181
+
+dev.bootstrap.server = localhost:9092
+
+prod.zookeeper = nn01.itversity.com:2181,nn02.itversity.com:2181,nn03.itversity.com:2181
+
+prod.bootstrap.server = wn01.itversity.com:6667,wn02.itversity.com:6667
+
+# ProduceLogMessagesFromFile.scala
+
+
+import java.util.Properties
+
+import scala.io.Source
+import com.typesafe.config.ConfigFactory
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
+
+/**
+  * Created by itversity on 30/10/18.
+  */
+object ProduceLogMessagesFromFile {
+  def main(args: Array[String]): Unit = {
+    val conf = ConfigFactory.load
+    val envProps = conf.getConfig(args(0))
+    val props = new Properties()
+    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, envProps.getString("bootstrap.server"))
+    props.put(ProducerConfig.CLIENT_ID_CONFIG, "Produce log messages from file")
+    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    val producer = new KafkaProducer[String, String](props)
+
+    val inputDir = args(1)
+    val topicName = args(2)
+
+    val logMessages = Source.fromFile(inputDir).getLines.toList
+    logMessages.foreach(message => {
+      val record = new ProducerRecord[String, String](topicName, message)
+      producer.send(record)
+    })
+
+    producer.close
+
+  }
+
+}
+
+
+	- Here is the improvised code which produces messages to a partitioned topic using the key. 
+	- By default, it will apply hash on key (IP address) and then mod using the number of partitions. 
+	- We can validate by consuming each partition separately to see that all messages related to the same IP are in its corresponding partition.
+
+
+import java.util.Properties
+
+import scala.io.Source
+import com.typesafe.config.ConfigFactory
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
+
+/**
+  * Created by itversity on 30/10/18.
+  */
+object ProduceLogMessagesFromFileKey {
+  def main(args: Array[String]): Unit = {
+    val conf = ConfigFactory.load
+    val envProps = conf.getConfig(args(0))
+    val props = new Properties()
+    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, envProps.getString("bootstrap.server"))
+    props.put(ProducerConfig.CLIENT_ID_CONFIG, "Produce log messages from file")
+    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+   
+    val producer = new KafkaProducer[String, String](props)
+
+    val inputDir = args(1)
+    val topicName = args(2)
+
+    val logMessages = Source.fromFile(inputDir).getLines.toList
+    logMessages.foreach(message => {
+      //Use ip address as key
+      val ipAddr = message.split(" ")(0)
+      val record = new ProducerRecord[String, String](topicName, ipAddr, message)
+      producer.send(record)
+    })
+    producer.close
+  }
+}
+
+
+
+	- Here is the improvised code which produce messages to Kafka Topic as per custom logic. 
+	- This code uses geoip database and plugin to push US data to one partition and rest to other partitions. 
+	- Messages with invalid ips are also pushed to a different topic.
+
+
+import java.util.Properties
+import java.io.File
+import com.maxmind.geoip2.DatabaseReader
+import java.net.InetAddress
+
+import scala.io.Source
+import com.typesafe.config.ConfigFactory
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
+
+/**
+  * Created by itversity on 30/10/18.
+  */
+object ProduceLogMessagesFromFilePartition {
+  def main(args: Array[String]): Unit = {
+    val conf = ConfigFactory.load
+    val envProps = conf.getConfig(args(0))
+    val props = new Properties()
+   
+    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, envProps.getString("bootstrap.server"))
+    props.put(ProducerConfig.CLIENT_ID_CONFIG, "Produce log messages from file")
+    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer")
+
+    val producer = new KafkaProducer[String, String](props)
+
+    val inputDir = args(1)
+    val topicName = args(2)
+
+    val logMessages = Source.fromFile(inputDir).getLines.toList
+
+    val database = new File("src/main/resources/db/maxmind/GeoLite2-Country.mmdb")
+    val reader = new DatabaseReader.Builder(database).build
+
+    logMessages.foreach(message => {
+      try {
+        val ipAddr = message.split(" ")(0)
+        val countryIsoCode = reader.country(InetAddress.getByName(ipAddr)).getCountry.getIsoCode
+        val partitionIndex = if (countryIsoCode == "US") 2
+                             else countryIsoCode.hashCode() % 2
+        val record = new ProducerRecord[String, String](topicName, partitionIndex, ipAddr, message)
+        producer.send(record)
+      } catch {
+        case e: Exception => {
+          val record = new ProducerRecord[String, String](topicName + "_invalid", message)
+          producer.send(record)
+        }
+      }
+    })
+    producer.close
+  }
+}
+
+
+	- We can also pass timestamp as well as partition index while building ProducerRecord. However, we will leave it to you as an exercise to explore and see the behavior.

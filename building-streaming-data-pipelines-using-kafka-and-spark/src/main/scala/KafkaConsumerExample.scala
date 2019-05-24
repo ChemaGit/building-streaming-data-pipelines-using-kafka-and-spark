@@ -17,7 +17,7 @@ object KafkaConsumerExample {
     props.put(ConsumerConfig.GROUP_ID_CONFIG, "1")
 
     val consumer = new KafkaConsumer[String, String](props)
-    consumer.subscribe(Collections.singletonList("Kafka-Testing"))
+    consumer.subscribe(Collections.singletonList("retail_multi"))
      while(true){
       val records = consumer.poll(500)
       for (record <- records.iterator()) {
