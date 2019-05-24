@@ -426,19 +426,26 @@ object ProduceLogMessagesFromFileKey {
 
 
 import java.util.Properties
+
 import java.io.File
+
 import com.maxmind.geoip2.DatabaseReader
+
 import java.net.InetAddress
 
 import scala.io.Source
+
 import com.typesafe.config.ConfigFactory
+
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 
 /**
   * Created by itversity on 30/10/18.
   */
 object ProduceLogMessagesFromFilePartition {
+
   def main(args: Array[String]): Unit = {
+  
     val conf = ConfigFactory.load
     val envProps = conf.getConfig(args(0))
     val props = new Properties()
