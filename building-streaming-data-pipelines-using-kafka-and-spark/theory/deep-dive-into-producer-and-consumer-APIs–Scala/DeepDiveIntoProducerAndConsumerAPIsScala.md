@@ -345,14 +345,18 @@ prod.bootstrap.server = wn01.itversity.com:6667,wn02.itversity.com:6667
 import java.util.Properties
 
 import scala.io.Source
+
 import com.typesafe.config.ConfigFactory
+
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 
 /**
   * Created by itversity on 30/10/18.
   */
 object ProduceLogMessagesFromFile {
+
   def main(args: Array[String]): Unit = {
+  
     val conf = ConfigFactory.load
     val envProps = conf.getConfig(args(0))
     val props = new Properties()
@@ -386,14 +390,18 @@ object ProduceLogMessagesFromFile {
 import java.util.Properties
 
 import scala.io.Source
+
 import com.typesafe.config.ConfigFactory
+
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 
 /**
   * Created by itversity on 30/10/18.
   */
 object ProduceLogMessagesFromFileKey {
+
   def main(args: Array[String]): Unit = {
+  
     val conf = ConfigFactory.load
     val envProps = conf.getConfig(args(0))
     val props = new Properties()
@@ -416,6 +424,7 @@ object ProduceLogMessagesFromFileKey {
     })
     producer.close
   }
+  
 }
 
 
@@ -482,6 +491,7 @@ object ProduceLogMessagesFromFilePartition {
     })
     producer.close
   }
+  
 }
 
 
