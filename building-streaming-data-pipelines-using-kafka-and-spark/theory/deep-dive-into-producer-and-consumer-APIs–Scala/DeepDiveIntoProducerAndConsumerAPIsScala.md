@@ -505,3 +505,83 @@ object ProduceLogMessagesFromFilePartition {
 
 
 	- We can also pass timestamp as well as partition index while building ProducerRecord. However, we will leave it to you as an exercise to explore and see the behavior.
+
+
+# Consumer APIs – Partitioned Topic
+
+	- As we have understood APIs associated with Producer in detail now it is time for us to explore Consumer APIs in detail.
+
+	- Here are the steps to consume messages from Kafka Topic 
+    		- Create Properties object with all relevant properties.
+    		- Create KafkaConsumer object by passing Properties object.
+    		- Subscribe to Topic or Assign to Topic Partition
+    		- Poll in infinite loop
+    		- Poll will return ConsumerRecords object. It is collection of ConsumerRecord objects.
+    		- In a for loop we can iterate through ConsumerRecords and perform necessary action.
+
+	- consumer.poll will take the duration of a poll as argument and return ConsumerRecords
+	- Let us also review all the APIs that are available as part of ConsumerRecord using :javap -p ConsumerRecord
+	- Multiple consumer groups are used to process the same data for different purposes.
+
+
+# Subscribing to Topic
+
+	- As we have understood important APIs to consume messages from Kafka Topic, let us create an application using IDE and understand different partition assignment strategies.
+		- If you subscribe one consumer to a Multi Partitioned Topic, data will be read from all partitions in round robin fashion
+		- As the data is consumed, offset will be committed. In the subsequent runs using same consumer group with offset being earliest, data will be consumed from the last offset not earliest.
+		- We can use seek to reset the offset, but it is not effective with subscribe against the partitioned topic.
+		- If you subscribe multiple consumers to a Multi Partitioned Topic, by default range of the subset of partitions will be processed by each consumer.
+		- We can also specify round robin to change the partition assignment strategy using ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG or partition.assignment.strategy 
+		- (e.g.: props.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, “org.apache.kafka.clients.consumer.RoundRobinAssignor”))
+		- We can implement custom partition assignment strategy and use it by specifying the fully qualified class name as part of the above-mentioned property.
+		- Here is the example of a consumer subscribing to a Topic. We will open two sessions and run two separate jobs simultaneously to understand the behavior.
+
+
+import java.util.{Properties, Collections}
+
+import com.typesafe.config.ConfigFactory
+
+import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
+
+import scala.collection.JavaConversions._
+
+object ConsumeLogMessagesFromTopicSubscribe {
+
+  def main(args: Array[String]): Unit = {
+  
+    val conf = ConfigFactory.load
+    val envProps = conf.getConfig(args(0))
+    val props = new Properties()
+    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,envProps.getString("bootstrap.server"))
+    props.put(ConsumerConfig.CLIENT_ID_CONFIG,"Consume Messages from Topic")
+    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringDeserializer")
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringDeserializer")
+    props.put(ConsumerConfig.GROUP_ID_CONFIG, "dg30")
+    props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
+    
+    // props.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG,"range")
+
+    val consumer = new KafkaConsumer[String, String](props)
+    consumer.subscribe(Collections.singletonList(args(1)))
+
+    while(true) {
+      val records = consumer.poll(500)
+      for(record <- records) {
+        println("Received message: (" + record.key()
+          + ", " + record.value()
+          + ") from " + record.partition()
+          + " at offset " + record.offset())
+      }
+    }
+  }
+
+}
+
+
+# Assigning Topic Partition
+
+	- Let us understand how to assign a particular Topic Partition to a Consumer Group.
+    		- We can also assign specific partitions to each of the consumers in a consumer group using assign. 
+		- It takes the collection of TopicPartition as an argument. 
+		- We can build TopicPartition object using topic name along with the partition index.
+    		- Here is the example where a partition is assigned to a Consumer Group.

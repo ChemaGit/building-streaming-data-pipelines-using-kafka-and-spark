@@ -25,7 +25,7 @@ object ProduceLogMessagesFromFile {
 
     val logMessages = Source.fromFile(inputDir).getLines.toList
     logMessages.foreach(message => {
-      //println(message)
+      println(message)
       val record = new ProducerRecord[String, String](topicName, message)
       producer.send(record)
     })
