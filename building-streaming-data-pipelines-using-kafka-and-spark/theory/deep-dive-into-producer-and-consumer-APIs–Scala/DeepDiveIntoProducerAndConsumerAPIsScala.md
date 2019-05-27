@@ -581,7 +581,7 @@ object ConsumeLogMessagesFromTopicSubscribe {
 # Assigning Topic Partition
 
 	- Let us understand how to assign a particular Topic Partition to a Consumer Group.
-    		- We can also assign specific partitions to each of the consumers in a consumer group using assign. 
+    	- We can also assign specific partitions to each of the consumers in a consumer group using assign. 
 		- It takes the collection of TopicPartition as an argument. 
 		- We can build TopicPartition object using topic name along with the partition index.
-    		- Here is the example where a partition is assigned to a Consumer Group.
+    	- Here is the example where a partition is assigned to a Consumer Group.
