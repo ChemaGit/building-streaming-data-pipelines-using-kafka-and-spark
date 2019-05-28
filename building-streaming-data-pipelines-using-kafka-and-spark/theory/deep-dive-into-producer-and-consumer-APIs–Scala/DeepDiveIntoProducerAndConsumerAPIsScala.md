@@ -585,3 +585,69 @@ object ConsumeLogMessagesFromTopicSubscribe {
 		- It takes the collection of TopicPartition as an argument. 
 		- We can build TopicPartition object using topic name along with the partition index.
     	- Here is the example where a partition is assigned to a Consumer Group.
+    	
+    	
+import java.util.{Collections, Properties}
+
+import com.typesafe.config.ConfigFactory
+
+import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
+
+import org.apache.kafka.common.TopicPartition
+
+import scala.collection.JavaConversions._
+
+
+object ConsumeLogMessagesFromTopic {
+
+  def main(args: Array[String]): Unit = {
+
+    val conf = ConfigFactory.load
+    val envProps = conf.getConfig(args(0))
+    val props = new Properties()
+
+    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,envProps.getString("bootstrap.server"))
+    props.put(ConsumerConfig.CLIENT_ID_CONFIG,"Consume messages from topic")
+    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringDeserializer")
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringDeserializer")
+
+    props.put(ConsumerConfig.GROUP_ID_CONFIG, "cgb3")
+    props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
+    props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true")
+
+    val consumer = new KafkaConsumer[String, String](props)
+    val partitions = Set(new TopicPartition(args(1), args(2).toInt))
+    consumer.assign(partitions)
+    consumer.seekToBeginning(consumer.assignment())
+
+    while(true) {
+      val records = consumer.poll(500)
+      for(record <- records) {
+        println("Received message: (" + record.key()
+          + ", " + record.value()
+          + ") from " + record.partition()
+          + " at offset " + record.offset())
+      }
+      Thread.sleep(100)
+    }
+  }
+}
+
+
+	- We can also implement an assignment strategy of assigning all even partitions to one consumer while odd partitions to other. 
+	- However, we are leaving it as an exercise for you.
+
+
+# Consumer APIs – Managing Commits
+
+	- Now let us see how we can perform commit as part of consumers.
+    		- Commit is nothing but saving offset periodically. The offset will be committed to internal topics managed by Kafka.
+    		- If you look at message structure, for each message being consumed include topic name, partition name, offset and other information.
+    		- If auto-commit is enabled, offset of the last message returned by poll will be committed after processing all the messages.
+    		- If you poll every 5 seconds, then commit will happen every 5 seconds
+    		- This can cause duplicates while reprocessing of data if there are any failures as part of the batch. Reprocessing is also called as rebalancing.
+    		- However, based upon the nature of data we might want to commit as per pre-defined logic manually.
+    		- With manual commit, Kafka supports commitSync as well as commitAsync.
+    		- If your consumer needs to commit very often, then the overhead of committing using commitSync is considerable as the consumer need to wait until commit is complete to process new data.
+    		- commitAsync will just submit commit request and proceed to process next batch of data.
+    		- We can pass the current offset to commitSync as well as commitAsync as part of the manual commit process.    	
