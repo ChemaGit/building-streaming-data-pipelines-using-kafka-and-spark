@@ -146,3 +146,119 @@
     	- Ship to cluster and deploy
 
 # Dependencies (build.sbt)
+
+	- Spark structured streaming require Spark SQL dependencies.
+		- Add type safe config dependency so that we can externalize properties
+    		- Add spark-core and spark-sql dependencies
+    		- Replace build.sbt with below lines of code
+
+name := "StreamingDemo"
+
+version := "1.0"
+
+scalaVersion := "2.11.12"
+
+libraryDependencies += "com.typesafe" % "config" % "1.3.2"
+
+libraryDependencies += "org.apache.spark" %% "spark-core" % "2.3.0"
+
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.3.0"
+
+
+# Externalize Properties
+
+	- We need to make sure that application can be run in different environments. 
+	- It is very important to understand how to externalize properties and pass the information at run time.
+    		- Make sure build.sbt have dependency related to type safe config
+    		- Create new directory under src/main by name resources
+    		- Add file called application.properties and add below entries
+
+dev.execution.mode = local
+
+dev.data.host = quickstart.cloudera
+
+dev.data.port = 9999
+
+prod.execution.mode = yarn
+
+//make sure you use appropriate host for which you have access to
+
+prod.data.host = gw02.itversity.com
+
+prod.data.port = 9999
+
+
+# Create GetStreamingDepartmentTraffic Program
+
+    	- Create scala program by choosing Scala Class and then type Object
+    	- Make sure program is named as GetStreamingDepartmentTraffic
+    	- First we need to import necessary APIs
+    	- Develop necessary logic
+        	- Get the properties from application.properties
+        	- Create spark session object by name spark
+        	- Create stream using spark.readStream
+        	- Process data using Data Frame Operations
+        	- Write the output to console (in actual applications we write the output to database)
+
+
+import com.typesafe.config.ConfigFactory
+
+import org.apache.spark.sql.SparkSession
+
+import org.apache.spark.sql.functions.{split, to_timestamp, window, count}
+
+import org.apache.spark.sql.streaming.Trigger
+
+object GetStreamingDepartmentTraffic {
+
+  def main(args: Array[String]): Unit = {
+
+    val conf = ConfigFactory.load.getConfig(args(0))
+    val spark = SparkSession.
+      builder.
+      master(conf.getString("execution.mode")).
+      appName("Get Streaming Department Traffic").
+      getOrCreate()
+
+    import spark.implicits._
+    spark.sparkContext.setLogLevel("ERROR")
+    spark.conf.set("spark.sql.shuffle.partitions", "2")
+
+    val lines = spark.
+      readStream.
+      format("socket").
+      option("host", conf.getString("data.host")).
+      option("port", conf.getString("data.port")).
+      load
+
+    val departmentLines = lines.
+      filter(split(split($"value", " ")(6), "/")(1) === "department").
+      withColumn("visit_time", to_timestamp(split($"value", " ")(3), "[dd/MMM/yyyy:HH:mm:ss")).
+      withColumn("department_name", split(split($"value", " ")(6), "/")(2)).
+      drop($"value")
+
+    val departmentTraffic = departmentLines.
+      groupBy(
+        window($"visit_time", "60 seconds", "20 seconds"),
+        $"department_name"
+      ).
+      agg(count("visit_time").alias("department_count"))
+
+    val query = departmentTraffic.
+      writeStream.
+      outputMode("update").
+      format("console").
+      trigger(Trigger.ProcessingTime("20 seconds")).
+      start
+
+    query.awaitTermination()
+
+  }
+
+}
+
+	- $ tail_logs | nc -lk 9999
+	- run the application GetStreamingDepartmentTraffic 
+
+
+# Build, Deploy and Run
