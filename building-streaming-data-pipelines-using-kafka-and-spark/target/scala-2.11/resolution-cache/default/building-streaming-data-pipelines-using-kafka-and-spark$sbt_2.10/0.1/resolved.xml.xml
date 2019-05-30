@@ -4,7 +4,7 @@
 		module="building-streaming-data-pipelines-using-kafka-and-spark$sbt_2.10"
 		revision="0.1"
 		status="integration"
-		publication="20190517115126"
+		publication="20190523111511"
 	/>
 	<configurations>
 		<conf name="default" visibility="public"/>
