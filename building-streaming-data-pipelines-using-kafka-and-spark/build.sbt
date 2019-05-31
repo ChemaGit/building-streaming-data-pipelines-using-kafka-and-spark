@@ -17,3 +17,6 @@ libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.3.0"
 dependencyOverrides += "com.fasterxml.jackson.core" % "jackson-core" % "2.9.5"
 dependencyOverrides += "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.5"
 dependencyOverrides += "com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % "2.9.5"
+
+
+// /home/cloudera/.ivy2/cache/com.typesafe/config/bundles/config-1.3.2.jar

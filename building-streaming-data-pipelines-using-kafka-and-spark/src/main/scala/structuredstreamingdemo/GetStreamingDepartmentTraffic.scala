@@ -26,7 +26,7 @@ object GetStreamingDepartmentTraffic {
       option("port", conf.getString("data.port")).
       load
 
-    /*val departmentLines = lines.
+    val departmentLines = lines.
       filter(split(split($"value", " ")(6), "/")(1) === "department").
       withColumn("visit_time", to_timestamp(split($"value", " ")(3), "[dd/MMM/yyyy:HH:mm:ss")).
       withColumn("department_name", split(split($"value", " ")(6), "/")(2)).
@@ -38,8 +38,8 @@ object GetStreamingDepartmentTraffic {
         $"department_name"
       ).
       agg(count("visit_time").alias("department_count"))
-*/
-    val query = lines.
+
+    val query = departmentTraffic.
       writeStream.
       outputMode("update").
       format("console").

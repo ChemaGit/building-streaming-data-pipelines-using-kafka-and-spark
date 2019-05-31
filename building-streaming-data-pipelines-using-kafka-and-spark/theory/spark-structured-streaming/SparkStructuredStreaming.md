@@ -262,3 +262,38 @@ object GetStreamingDepartmentTraffic {
 
 
 # Build, Deploy and Run
+
+	- $ tail_logs | nc -lk quickstart.cloudera 44444	
+	- on sbt
+	- sbt
+	- sbt> show discoveredMainClasses
+	- sbt> runMain structuredstreamingdemo.GetStreamingDepartmentTraffic dev
+
+	- Deploy and run on the server
+	- Right click on the project and copy path
+    	- Go to terminal and run cd command with the path copied
+    	- Run sbt package
+    	- It will generate jar file for our application
+    	- Copy to the server where you want to deploy
+    	- Start streaming tail_logs to web service – tail_logs.sh|nc -lk gw02.itversity.com 9999
+    	- Run below command in another session on the server
+
+
+$ tail_logs | nc -lk quickstart.cloudera 44444
+
+$ spark2-submit \
+  --master yarn \
+  --class structuredstreamingdemo.GetStreamingDepartmentTraffic \
+  --conf spark.ui.port=12901 \
+  --jars "/home/cloudera/.ivy2/cache/com.typesafe/config/bundles/config-1.3.2.jar" \
+target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark_2.11-0.1.jar dev
+
+
+$ spark2-submit \
+  --master yarn \
+  --class structuredstreamingdemo.GetStreamingDepartmentTraffic \
+  --conf spark.ui.port=12901 \
+  --packages com.typesafe:config:1.3.2 \
+target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark_2.11-0.1.jar dev
+
+# Kafka and Spark Structured Streaming – Integration
