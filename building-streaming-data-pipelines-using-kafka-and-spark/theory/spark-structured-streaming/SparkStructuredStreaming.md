@@ -297,3 +297,192 @@ $ spark2-submit \
 target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark_2.11-0.1.jar dev
 
 # Kafka and Spark Structured Streaming – Integration
+
+	- Let us see how we can get data from Kafka topic and process using Spark Structured Streaming.
+
+
+# Development Life Cycle
+
+	- Here are the steps involved to get started with HBase
+    		- Make sure gen_logs is setup and data is being streamed
+    		- Create new project StreamingDemo using IntelliJ
+        		- Choose scala 2.11
+        		- Choose sbt 0.13.x
+        		- Make sure JDK is chosen
+    		- Update build.sbt. See below
+      		- Define application properties
+    		- Create GetStreamingDepartmentTraffic object
+    		- Add logic to process data using Spark Structured Streaming
+    		- Build jar file
+    		- Ship to cluster and deploy
+
+# Dependencies (build.sbt)
+
+	- Spark structured streaming require Spark SQL dependencies.
+    		- Add type safe config dependency so that we can externalize properties
+    		- Add spark-sql dependencies
+    		- Replace build.sbt with below lines of code
+
+
+name := "KafkaWorkshop"
+
+version := "1.0"
+
+scalaVersion := "2.11.12"
+
+libraryDependencies += "com.typesafe" % "config" % "1.3.2"
+
+libraryDependencies += "org.apache.kafka" % "kafka-clients" % "1.0.0"
+
+libraryDependencies += "org.apache.spark" % "spark-sql_2.11" % "2.2.0"
+
+libraryDependencies += "org.apache.spark" % "spark-sql-kafka-0-10_2.11" % "2.2.0"
+
+
+# Externalize Properties
+	
+	- We need to make sure that application can be run in different environments. 
+	- It is very important to understand how to externalize properties and pass the information at run time.
+    		- Make sure build.sbt have dependency related to type safe config
+    		- Create new directory under src/main by name resources
+    		- Add file called application.properties and add below entries
+    		- It should include information related to Kafka broker
+
+
+dev.execution.mode = local
+
+dev.data.host = localhost
+
+dev.data.port = 9999
+
+dev.bootstrap.servers = localhost:9092
+
+prod.execution.mode = yarn
+
+prod.data.host = gw02.itversity.com
+
+prod.data.port = 9999
+
+prod.bootstrap.servers = wn01.itversity.com:6667,wn02.itversity.com:6667
+
+
+# Create GetStreamingDepartmentTraffic Program
+
+    	- Create scala program by choosing Scala Class and then type Object
+    	- Make sure program is named as GetStreamingDepartmentTraffic
+    	- First we need to import necessary APIs
+    	- Develop necessary logic
+        	- Get the properties from application.properties
+        	- Create spark session object by name spark
+        	- Create stream using spark.readStream
+        	- Pass broker information and topic information as options
+        	- Process data using Data Frame Operations
+        	- Write the output to console (in actual applications we write the output to database)
+
+
+
+import java.sql.Timestamp
+
+import com.typesafe.config.ConfigFactory
+
+import org.apache.spark.sql.SparkSession
+
+import org.apache.spark.sql.functions._
+
+import org.apache.spark.sql.streaming.Trigger
+
+
+// Created by itversity on 19/05/18.
+
+object GetStreamingDepartmentTrafficKafka {
+
+  def main(args: Array[String]): Unit = {
+
+    val conf = ConfigFactory.load.getConfig(args(0))
+    val spark = SparkSession.
+      builder().
+      master(conf.getString("execution.mode")).
+      appName("Get Streaming Department Traffic").
+      getOrCreate()
+
+    import spark.implicits._
+    spark.sparkContext.setLogLevel("ERROR")
+    spark.conf.set("spark.sql.shuffle.partitions", "2")
+
+    val lines = spark.readStream.
+      format("kafka").
+      option("kafka.bootstrap.servers", conf.getString("bootstrap.servers")).
+      option("subscribe", "retail_multi").
+      option("includeTimestamp", true).
+      load.
+      selectExpr("CAST(value AS STRING)", "timestamp").
+      as[(String, Timestamp)]
+
+    val departmentTraffic = lines.
+      where(split(split($"value", " ")(6), "/")(1) === "department").
+      select(split(split($"value", " ")(6), "/")(2).alias("department_name"), $"timestamp").
+      groupBy(
+        window($"timestamp", "20 seconds", "20 seconds"),$"department_name"
+      ).
+      count()
+
+    val query = departmentTraffic.
+      writeStream.
+      outputMode("update").
+      format("console").
+      trigger(Trigger.ProcessingTime("20 seconds")).
+      start()
+
+    query.awaitTermination()
+  }
+
+}
+
+
+spark2-submit \
+  --class structuredstreamingintegration.GetStreamingDepartmentTrafficKafka \
+  --master yarn \
+  --conf spark.ui.port=12901 \
+  --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.3.0 \
+bcstructuredstreamingdemo-assembly-1.0.jar prod update
+
+
+# Validate locally
+
+    	- Make sure zookeeper and Kafka broker are running
+	- $ start_logs
+    	- Start streaming tail_logs to Kafka Broker – tail_logs.sh|kafka-console-producer.sh --broker-list quickstart.cloudera:9092 --topic retail
+    	- Run the program using IDE to make sure we see output in the console
+
+	- From sbt
+	- $ start_logs
+	- $ tail_logs | kafka-console-producer --broker-list quickstart.cloudera:9092 --topic retail_multi
+	- $ sbt
+	- $ sbt compile
+	- $ runMain runMain structuredstreamingintegration.GetStreamingDepartmentTrafficKafka dev
+
+
+# Build, Deploy and Run
+
+    	- Right click on the project and copy path
+    	- Go to terminal and run cd command with the path copied
+    	- Run sbt package
+    	- It will generate jar file for our application
+    	- Copy to the server where you want to deploy
+    	- Make sure zookeeper and Kafka Broker are running
+	- $ start_logs
+    	- Start streaming tail_logs to web service – tail_logs.sh|kafka-console-producer.sh --broker-list nn01.itversity.com:6667,nn02.itversity.com:6667,rm01.itversity.com:6667 --topic retail
+    	- Run below command in another session on the server
+
+$ sbt package
+
+$ export SPARK_KAFKA_VERSION=0.10
+
+$ spark2-submit \
+  --master local \
+  --class structuredstreamingintegration.GetStreamingDepartmentTrafficKafka \
+  --conf spark.ui.port=12901 \
+  --jars "/home/cloudera/.ivy2/cache/com.typesafe/config/bundles/config-1.3.2.jar,/home/cloudera/.ivy2/cache/org.apache.spark/spark-sql_2.11/jars/spark-sql_2.11-2.2.0.jar,/home/cloudera/.ivy2/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-1.0.0.jar,/home/cloudera/.ivy2/cache/org.apache.spark/spark-core_2.11/jars/spark-core_2.11-2.2.0.jar" \
+  --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.2.0 \
+target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark_2.11-0.1.jar dev
+
