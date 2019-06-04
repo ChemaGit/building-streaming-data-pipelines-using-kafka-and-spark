@@ -33,13 +33,12 @@ object GetStreamingDepartmentTrafficKafka {
       selectExpr("CAST(value AS STRING)", "timestamp").
       as[(String, Timestamp)]
 
-    val departmentTraffic: DataFrame = lines.
+    val departmentTraffic : DataFrame = lines.
       where(split(split($"value", " ")(6), "/")(1) === "department").
       select(split(split($"value", " ")(6), "/")(2).alias("department_name"), $"timestamp").
       groupBy(
         window($"timestamp", "20 seconds", "20 seconds"),$"department_name"
-      ).
-      count().toDF("window","department_name","count")
+      ).count().toDF("window","department_name","count")
 
     val query = departmentTraffic.
       writeStream.
