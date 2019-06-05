@@ -19,4 +19,4 @@
     - Overview of NoSQL Databases and HBase
     - Development life cycle of HBase application
     - Case Study: Kafka at LinkedIn
-    - Final Demo: Streaming Data Pipelines
+    - Final Demo: Streaming Data Pipelines 
