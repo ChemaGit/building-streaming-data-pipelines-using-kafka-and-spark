@@ -16,10 +16,26 @@ libraryDependencies += "org.apache.spark" % "spark-sql_2.11" % "2.2.0"
 
 libraryDependencies += "org.apache.spark" % "spark-sql-kafka-0-10_2.11" % "2.2.0"
 
+libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.0"
+
+libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.1.2"
+
+libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.1.2"
+
 dependencyOverrides += "org.apache.spark" % "spark-sql_2.11" % "2.2.0"
 dependencyOverrides += "com.fasterxml.jackson.core" % "jackson-core" % "2.9.5"
 dependencyOverrides += "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.5"
 dependencyOverrides += "com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % "2.9.5"
+
+assemblyMergeStrategy in assembly := {
+  case m if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
+  case m if m.startsWith("META-INF") => MergeStrategy.discard
+  case PathList("javax", "servlet", xs@_*) => MergeStrategy.first
+  case PathList("org", "apache", xs@_*) => MergeStrategy.first
+  case "about.html" => MergeStrategy.rename
+  case "reference.conf" => MergeStrategy.concat
+  case _ => MergeStrategy.first
+}
 
 
 // /home/cloudera/.ivy2/cache/com.typesafe/config/bundles/config-1.3.2.jar
