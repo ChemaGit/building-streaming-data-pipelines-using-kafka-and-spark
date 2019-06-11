@@ -183,6 +183,7 @@ import org.apache.hadoop.hbase.util.Bytes
 object GettingStarted {
 
   def getHbaseConnection(conf: Config, env: String): Connection ={
+  
     //Create Hbase Configuration Object
     val hbaseConfig: Configuration = HBaseConfiguration.create()
     hbaseConfig.set("hbase.zookeeper.quorum", conf.getString("zookeeper.quorum"))
@@ -309,8 +310,11 @@ object NYSELoad {
   def buildPutList(table: Table, nyseRecord: String, schemaType: String) = {
 
     val nyseAttributes = nyseRecord.split(",")
+    
     val put = schemaType match {
+    
       case "thin" => {
+      
         val put = new Put(Bytes.toBytes(
           nyseAttributes(1) + ":" +
             nyseAttributes(0)))
