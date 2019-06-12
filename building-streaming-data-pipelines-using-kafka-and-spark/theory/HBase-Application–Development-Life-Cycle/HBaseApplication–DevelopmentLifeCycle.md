@@ -376,3 +376,254 @@ object NYSELoad {
 		- sbt> package
 		- sbt> runMain hbaseapplicationdevelopmentlifecycle.hbasedemo.NYSELoad dev /home/cloudera/files/NYSE_2017.txt nyse:stock_data_thin thin
 
+# Develop NYSELoadSpark using Spark Data Frames
+
+	- As part of this program we will see how we can read data from a directory and load data into nyse:stock_data_wide using Spark Data Frames and HBase APIs with Scala as programming language.
+		- Update build.sbt with spark dependencies
+    		- Load entire NYSE data from files into HBase on the cluster
+    		- Create HBase Connection
+    		- Create table object for nyse:stock_data_wide
+    		- For each record build put object and load into HBase table using table object (for performance reasons we can add multiple rows together)
+    		- Use Spark Dataframe APIs to read data and then to write into HBase table.
+
+# build.sbt
+
+name := "HBaseDemo"
+
+version := "0.1"
+
+scalaVersion := "2.11.12"
+
+libraryDependencies += "com.typesafe" % "config" % "1.3.2"
+
+libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.0"
+
+libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "2.7.0"
+
+libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.1.8"
+
+libraryDependencies += "org.apache.hbase" % "hbase-server" % "1.1.8"
+
+libraryDependencies += "org.apache.hbase" % "hbase-protocol" % "1.1.8"
+
+libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.1.8"
+
+libraryDependencies += "org.apache.spark" % "spark-sql_2.11" % "2.3.0"
+
+assemblyMergeStrategy in assembly := {
+
+  case m if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
+  case m if m.startsWith("META-INF") => MergeStrategy.discard
+  case PathList("javax", "servlet", xs@_*) => MergeStrategy.first
+  case PathList("org", "apache", xs@_*) => MergeStrategy.first
+  case "about.html" => MergeStrategy.rename
+  case "reference.conf" => MergeStrategy.concat
+  case _ => MergeStrategy.first
+}
+
+mainClass in assembly := Some("NYSELoad")
+
+# .properties
+
+dev.zookeeper.quorum = localhost
+
+dev.zookeeper.port = 2181
+
+dev.execution.mode = local
+
+prod.zookeeper.quorum = nn01.itversity.com,nn02.itversity.com,rm01.itversity.com
+
+prod.zookeeper.port = 2181
+
+prod.execution.mode = yarn-client
+
+
+# object NYSELoadSpark
+
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
+
+import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory, Put, Table}
+
+import org.apache.hadoop.hbase.util.Bytes
+
+import com.typesafe.config.{Config, ConfigFactory}
+
+import org.apache.hadoop.conf.Configuration
+
+import org.apache.spark.sql.{Row, SparkSession}
+
+
+object NYSELoadSpark {
+
+  def getHbaseConnection(conf: Config, env: String): Connection ={
+
+    //Create Hbase Configuration Object
+    val hbaseConfig: Configuration = HBaseConfiguration.create()
+    hbaseConfig.set("hbase.zookeeper.quorum",
+      conf.getString("zookeeper.quorum"))
+    hbaseConfig.set("hbase.zookeeper.property.clientPort",
+      conf.getString("zookeeper.port"))
+    if(env != "dev") {
+      hbaseConfig.set("zookeeper.znode.parent", "/hbase-unsecure")
+      hbaseConfig.set("hbase.cluster.distributed", "true")
+    }
+    val connection = ConnectionFactory.createConnection(hbaseConfig)
+    connection
+  }
+
+  def buildPutList(table: Table, nyseRecord: Row) = {
+
+    val put = new Put(Bytes.toBytes(
+      nyseRecord.getString(1).substring(0,6)
+      + "," + nyseRecord.get(0))) // Key
+
+    put.addColumn(Bytes.toBytes("sd"),
+      Bytes.toBytes(nyseRecord.get(1) + ",op"),
+      Bytes.toBytes(nyseRecord.getString(2)))
+    put.addColumn(Bytes.toBytes("sd"),
+      Bytes.toBytes(nyseRecord.get(1) + ",hp"),
+      Bytes.toBytes(nyseRecord.getString(3)))
+    put.addColumn(Bytes.toBytes("sd"),
+      Bytes.toBytes(nyseRecord.get(1) + ",lp"),
+      Bytes.toBytes(nyseRecord.getString(4)))
+    put.addColumn(Bytes.toBytes("sd"),
+      Bytes.toBytes(nyseRecord.get(1) + ",cp"),
+      Bytes.toBytes(nyseRecord.getString(5)))
+    put.addColumn(Bytes.toBytes("sd"),
+      Bytes.toBytes(nyseRecord.get(1) + ",v"),
+      Bytes.toBytes(nyseRecord.getString(6)))
+    put
+  }
+
+  def main(args: Array[String]): Unit = {
+
+    val env = args(0)
+    val conf = ConfigFactory.load.getConfig(env)
+
+    val spark = SparkSession.
+      builder.
+      master(conf.getString("execution.mode")).
+      appName("NYSE Load using Spark").
+      getOrCreate()
+
+    val nyseData = spark.read.csv(args(1))
+    nyseData.foreachPartition(records => {
+      val connection = getHbaseConnection(conf, env)
+      val table = connection.
+        getTable(TableName.valueOf("nyse:stock_data_wide"))
+      records.foreach(record => {
+        val row = buildPutList(table, record)
+        table.put(row)
+      })
+      table.close
+      connection.close
+    })
+  }
+}
+
+
+	- spark2-submit \ --class NYSELoadSpark \ --master yarn \ --conf spark.ui.port=4926 \ --jars $(echo /external_jars/*.jar | tr ' ' ',') \ hbasedemo_2.11-0.1.jar prod /public/nyse
+
+	- Run from sbt:
+		- $ sbt
+		- sbt> compile
+		- sbt> package
+		- sbt> runMain hbaseapplicationdevelopmentlifecycle.hbasedemo.NYSELoadSpark dev /home/cloudera/files/NYSE_2015.txt
+
+
+# Advanced Querying using HBase Shell (filters)
+
+	- Let us deep dive into advanced querying capabilities using HBase shell.
+    		- We can limit number of rows as part of scan and number of cells as part of get (using limit)
+    		- We can perform partial scan using startrow and endrow
+    		- We can project the desired fields as part of scan
+    		- There are bunch of filters available to query the data
+    		- Some filters are available as part of scan, some of them are available as part of get, while some of them are applicable to both scan as well as get.
+
+
+	- count 'nyse:stock_data_thick'
+
+	- To get first 10 records
+		- scan 'nyse:stock_data_thick', {LIMIT => 10}
+
+	- Partial Scan example (using STARTROW and ENDROW)
+		- scan 'nyse:stock_data_thick', {STARTROW => '201601:A', ENDROW => '201601:B'}
+
+	- Get all rows with prefix
+	- To get all the rows which have prefix 200401
+	- This filter is not available on get (we have ColumnPrefixFilter)
+		- scan 'nyse:stock_data_thick', {FILTER => "PrefixFilter('201601')", LIMIT => 10}
+
+	- Using partial scan with STARTROW/ENDROW will perform better
+		- scan 'nyse:stock_data_thick', {FILTER => "PrefixFilter('201601')", LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
+
+	- Projecting required columns using COLUMNS
+		- scan 'nyse:stock_data_thick', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10}
+
+	- Using partial scan with STARTROW/ENDROW will perform better
+		- scan 'nyse:stock_data_thick', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
+
+		- get 'nyse:stock_data_thick', '201601:A', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10}
+
+	- Projecting required columns using column prefix
+	- We can either use ColumnPrefixFilter or MultipleColumnPrefixFilter
+		- scan 'nyse:stock_data_thick', {FILTER => "ColumnPrefixFilter('20160129')", LIMIT => 10}
+
+	- Using partial scan with STARTROW/ENDROW and then ColumnPrefixFilter will perform better in this case
+		- scan 'nyse:stock_data_thick', {FILTER => "ColumnPrefixFilter('20160129')", STARTROW => '201601:A', ENDROW => '201601:ZZZZ', LIMIT => 10}
+
+		- get 'nyse:stock_data_thick', '201601:A', {FILTER => "ColumnPrefixFilter('20160129')"}get 'nyse:stock_data_thick', '201601:A', {FILTER => "MultipleColumnPrefixFilter('20160129', '20160128')"}
+
+	- Projecting required columns using range
+	- To get all the rows from 20040110 to 20040115
+		- scan 'nyse:stock_data_thick', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)", LIMIT => 10}
+
+	- Using partial scan with STARTROW/ENDROW and then ColumnRangeFilter will perform better in this case
+		- scan 'nyse:stock_data_thick', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)", LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
+
+	- get 'nyse:stock_data_thick', '201601:A', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)"}
+
+
+# Advanced Querying Programmatically
+
+	- Let us see how we can develop programs using filtering.
+    		- Almost all the queries which we have executed earlier can be written as programs
+    		- Create HBase configuration and then connection object
+    		- Create table object
+    		- Create get or scan object depending up on the filter you are trying to use
+    		- Create filter object
+    		- Get results by using get or getScanner
+    		- Iterate through results
+
+
+import org.apache.hadoop.conf.Configuration
+
+import org.apache.hadoop.hbase.client._
+
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
+
+import org.apache.hadoop.hbase.util.Bytes
+
+import org.apache.hadoop.hbase.filter.ColumnRangeFilter
+
+val hbaseConf = HBaseConfiguration.create()
+
+hbaseConf.set("hbase.zookeeper.quorum", "localhost")
+
+hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
+
+val connection = ConnectionFactory.createConnection(hbaseConf)
+
+val table = connection.getTable(TableName.valueOf("nyse:stock_data_wide"))
+
+val get = new Get(Bytes.toBytes("201601,A"))
+
+val filter = new ColumnRangeFilter(Bytes.toBytes("20160129,cp"), true, Bytes.toBytes("20160129,cp"), true)
+
+val row = table.get(get)
+
+println(Bytes.toString(row.getValue(Bytes.toBytes("sd"), Bytes.toBytes("20160101,cp"))))
+
+table.close
+
+connection.close
