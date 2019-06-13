@@ -579,7 +579,8 @@ object NYSELoadSpark {
 	- Using partial scan with STARTROW/ENDROW and then ColumnPrefixFilter will perform better in this case
 		- scan 'nyse:stock_data_thin', {FILTER => "ColumnPrefixFilter('20160129')", STARTROW => '201601:A', ENDROW => '201601:ZZZZ', LIMIT => 10}
 
-		- get 'nyse:stock_data_thin', '201601:A', {FILTER => "ColumnPrefixFilter('20160129')"}get 'nyse:stock_data_thick', '201601:A', {FILTER => "MultipleColumnPrefixFilter('20160129', '20160128')"}
+		- get 'nyse:stock_data_thin', '201601:A', {FILTER => "ColumnPrefixFilter('20160129')"}
+		- get 'nyse:stock_data_thin', '201601:A', {FILTER => "MultipleColumnPrefixFilter('20160129', '20160128')"}
 
 	- Projecting required columns using range
 	- To get all the rows from 20040110 to 20040115
@@ -615,21 +616,21 @@ import org.apache.hadoop.hbase.filter.ColumnRangeFilter
 
 val hbaseConf = HBaseConfiguration.create()
 
-hbaseConf.set("hbase.zookeeper.quorum", "localhost")
+hbaseConf.set("hbase.zookeeper.quorum", "quickstart.cloudera")
 
 hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
 
 val connection = ConnectionFactory.createConnection(hbaseConf)
 
-val table = connection.getTable(TableName.valueOf("nyse:stock_data_wide"))
+val table = connection.getTable(TableName.valueOf("nyse:stock_data_thin"))
 
-val get = new Get(Bytes.toBytes("201601,A"))
+val get = new Get(Bytes.toBytes("20100101,AB"))
 
-val filter = new ColumnRangeFilter(Bytes.toBytes("20160129,cp"), true, Bytes.toBytes("20160129,cp"), true)
+val filter = new ColumnRangeFilter(Bytes.toBytes("20100101,cp"), true, Bytes.toBytes("20100101,cp"), true)
 
 val row = table.get(get)
 
-println(Bytes.toString(row.getValue(Bytes.toBytes("sd"), Bytes.toBytes("20160101,cp"))))
+println(Bytes.toString(row.getValue(Bytes.toBytes("sd"), Bytes.toBytes("20100101,cp"))))
 
 table.close
 
