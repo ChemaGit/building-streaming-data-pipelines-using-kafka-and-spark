@@ -1,6 +1,3 @@
-import org.apache.logging.log4j.core.config.composite.MergeStrategy
-import sun.security.tools.PathList
-
 name := "building-streaming-data-pipelines-using-kafka-and-spark"
 
 version := "0.1"
@@ -38,12 +35,23 @@ dependencyOverrides += "com.fasterxml.jackson.module" % "jackson-module-scala_2.
   case "about.html" => MergeStrategy.rename
   case "reference.conf" => MergeStrategy.concat
   case _ => MergeStrategy.first
-  
+}
   *********************************
-assemblyMergeStrategy in assembly := {
+  Under directory project we have to create the assembly.sbt file and add 
+  the depencency 
+  addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.6")
+  now from command line run $ sbt assembly
+  /target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark-assembly-0.1.jar 
+  run the application
+  $ sbt assembly
+  $ java -jar target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark-assembly-0.1.jar dev /home/cloudera/files/NYSE_2010.txt nyse:stock_data_thin thin
+ */
 
-  case m if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
-  case m if m.startsWith("META-INF") => MergeStrategy.discard
+
+
+assemblyMergeStrategy in assembly := {
+  case (m: String) if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
+  case (m: String) if m.startsWith("META-INF") => MergeStrategy.discard
   case PathList("javax", "servlet", xs@_*) => MergeStrategy.first
   case PathList("org", "apache", xs@_*) => MergeStrategy.first
   case "about.html" => MergeStrategy.rename
@@ -51,11 +59,14 @@ assemblyMergeStrategy in assembly := {
   case _ => MergeStrategy.first
 }
 
-mainClass in assembly := Some("NYSELoad")  
-  
-}*/
+mainClass in assembly := Some("hbaseapplicationdevelopmentlifecycle.hbasedemo.NYSELoad")  
 
-
+/*
+lazy val root = (project in file(".")).
+  settings(
+    mainClass in compile := Some("hbaseapplicationdevelopmentlifecycle.hbasedemo.NYSELoadSpark")
+  )
+ */
 // /home/cloudera/.ivy2/cache/com.typesafe/config/bundles/config-1.3.2.jar
 // /home/cloudera/.ivy2/cache/org.apache.spark/spark-sql_2.11/jars/spark-sql_2.11-2.3.0.jar
 // /home/cloudera/.ivy2/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-1.0.0.jar

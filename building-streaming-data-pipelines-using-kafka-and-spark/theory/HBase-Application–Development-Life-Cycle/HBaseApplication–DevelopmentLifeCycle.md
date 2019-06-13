@@ -375,6 +375,13 @@ object NYSELoad {
 		- sbt> compile
 		- sbt> package
 		- sbt> runMain hbaseapplicationdevelopmentlifecycle.hbasedemo.NYSELoad dev /home/cloudera/files/NYSE_2017.txt nyse:stock_data_thin thin
+		
+    - Under directory project we have to create the assembly.sbt file and add the depencency addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.6")
+    - now from command line run $ sbt assembly
+    - /target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark-assembly-0.1.jar 
+    - run the application
+    - $ sbt assembly
+    - $ java -jar target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark-assembly-0.1.jar dev /home/cloudera/files/NYSE_2010.txt nyse:stock_data_thin thin		
 
 # Develop NYSELoadSpark using Spark Data Frames
 
@@ -541,47 +548,47 @@ object NYSELoadSpark {
     		- Some filters are available as part of scan, some of them are available as part of get, while some of them are applicable to both scan as well as get.
 
 
-	- count 'nyse:stock_data_thick'
+	- count 'nyse:stock_data_thin'
 
 	- To get first 10 records
-		- scan 'nyse:stock_data_thick', {LIMIT => 10}
+		- scan 'nyse:stock_data_thin', {LIMIT => 10}
 
 	- Partial Scan example (using STARTROW and ENDROW)
-		- scan 'nyse:stock_data_thick', {STARTROW => '201601:A', ENDROW => '201601:B'}
+		- scan 'nyse:stock_data_thin', {STARTROW => '201601:A', ENDROW => '201601:B'}
 
 	- Get all rows with prefix
 	- To get all the rows which have prefix 200401
 	- This filter is not available on get (we have ColumnPrefixFilter)
-		- scan 'nyse:stock_data_thick', {FILTER => "PrefixFilter('201601')", LIMIT => 10}
+		- scan 'nyse:stock_data_thin', {FILTER => "PrefixFilter('201601')", LIMIT => 10}
 
 	- Using partial scan with STARTROW/ENDROW will perform better
-		- scan 'nyse:stock_data_thick', {FILTER => "PrefixFilter('201601')", LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
+		- scan 'nyse:stock_data_thin', {FILTER => "PrefixFilter('201601')", LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
 
 	- Projecting required columns using COLUMNS
-		- scan 'nyse:stock_data_thick', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10}
+		- scan 'nyse:stock_data_thin', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10}
 
 	- Using partial scan with STARTROW/ENDROW will perform better
-		- scan 'nyse:stock_data_thick', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
+		- scan 'nyse:stock_data_thin', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
 
-		- get 'nyse:stock_data_thick', '201601:A', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10}
+		- get 'nyse:stock_data_thin', '201601:A', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10}
 
 	- Projecting required columns using column prefix
 	- We can either use ColumnPrefixFilter or MultipleColumnPrefixFilter
-		- scan 'nyse:stock_data_thick', {FILTER => "ColumnPrefixFilter('20160129')", LIMIT => 10}
+		- scan 'nyse:stock_data_thin', {FILTER => "ColumnPrefixFilter('20160129')", LIMIT => 10}
 
 	- Using partial scan with STARTROW/ENDROW and then ColumnPrefixFilter will perform better in this case
-		- scan 'nyse:stock_data_thick', {FILTER => "ColumnPrefixFilter('20160129')", STARTROW => '201601:A', ENDROW => '201601:ZZZZ', LIMIT => 10}
+		- scan 'nyse:stock_data_thin', {FILTER => "ColumnPrefixFilter('20160129')", STARTROW => '201601:A', ENDROW => '201601:ZZZZ', LIMIT => 10}
 
-		- get 'nyse:stock_data_thick', '201601:A', {FILTER => "ColumnPrefixFilter('20160129')"}get 'nyse:stock_data_thick', '201601:A', {FILTER => "MultipleColumnPrefixFilter('20160129', '20160128')"}
+		- get 'nyse:stock_data_thin', '201601:A', {FILTER => "ColumnPrefixFilter('20160129')"}get 'nyse:stock_data_thick', '201601:A', {FILTER => "MultipleColumnPrefixFilter('20160129', '20160128')"}
 
 	- Projecting required columns using range
 	- To get all the rows from 20040110 to 20040115
-		- scan 'nyse:stock_data_thick', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)", LIMIT => 10}
+		- scan 'nyse:stock_data_thin', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)", LIMIT => 10}
 
 	- Using partial scan with STARTROW/ENDROW and then ColumnRangeFilter will perform better in this case
-		- scan 'nyse:stock_data_thick', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)", LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
+		- scan 'nyse:stock_data_thin', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)", LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
 
-	- get 'nyse:stock_data_thick', '201601:A', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)"}
+	- get 'nyse:stock_data_thin', '201601:A', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)"}
 
 
 # Advanced Querying Programmatically
