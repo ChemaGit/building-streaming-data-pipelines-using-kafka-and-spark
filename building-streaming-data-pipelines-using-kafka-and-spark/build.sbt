@@ -7,13 +7,15 @@ scalaVersion := "2.11.12"
 libraryDependencies += "com.typesafe" % "config" % "1.3.2"
 
 libraryDependencies += "org.apache.kafka" % "kafka-clients" % "1.0.0"
+libraryDependencies += "org.apache.kafka" %% "kafka" % "1.1.0"
 
 libraryDependencies += "com.maxmind.geoip2" % "geoip2" % "2.12.0"
 
 libraryDependencies += "org.apache.spark" %% "spark-core" % "2.2.0"
 libraryDependencies += "org.apache.spark" % "spark-sql_2.11" % "2.2.0"
-dependencyOverrides += "org.apache.spark" % "spark-sql_2.11" % "2.2.0"
 libraryDependencies += "org.apache.spark" % "spark-sql-kafka-0-10_2.11" % "2.2.0"
+libraryDependencies += "org.apache.spark" % "spark-streaming_2.11" % "2.2.0"
+libraryDependencies += "org.apache.spark" %% "spark-streaming-kafka-0-10" % "2.2.0"
 
 libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.0"
 libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "2.7.0"
@@ -47,8 +49,6 @@ dependencyOverrides += "com.fasterxml.jackson.module" % "jackson-module-scala_2.
   $ java -jar target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark-assembly-0.1.jar dev /home/cloudera/files/NYSE_2010.txt nyse:stock_data_thin thin
  */
 
-
-
 assemblyMergeStrategy in assembly := {
   case (m: String) if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
   case (m: String) if m.startsWith("META-INF") => MergeStrategy.discard
@@ -67,6 +67,7 @@ lazy val root = (project in file(".")).
     mainClass in compile := Some("hbaseapplicationdevelopmentlifecycle.hbasedemo.NYSELoadSpark")
   )
  */
+// dependencyOverrides += "org.apache.spark" % "spark-sql_2.11" % "2.2.0"
 // /home/cloudera/.ivy2/cache/com.typesafe/config/bundles/config-1.3.2.jar
 // /home/cloudera/.ivy2/cache/org.apache.spark/spark-sql_2.11/jars/spark-sql_2.11-2.3.0.jar
 // /home/cloudera/.ivy2/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-1.0.0.jar
