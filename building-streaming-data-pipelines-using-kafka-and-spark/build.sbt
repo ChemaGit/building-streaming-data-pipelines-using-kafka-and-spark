@@ -49,6 +49,7 @@ dependencyOverrides += "com.fasterxml.jackson.module" % "jackson-module-scala_2.
   $ java -jar target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark-assembly-0.1.jar dev /home/cloudera/files/NYSE_2010.txt nyse:stock_data_thin thin
  */
 
+/*
 assemblyMergeStrategy in assembly := {
   case (m: String) if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
   case (m: String) if m.startsWith("META-INF") => MergeStrategy.discard
@@ -60,7 +61,7 @@ assemblyMergeStrategy in assembly := {
 }
 
 mainClass in assembly := Some("hbaseapplicationdevelopmentlifecycle.hbasedemo.NYSELoad")  
-
+*/
 /*
 lazy val root = (project in file(".")).
   settings(

@@ -59,7 +59,7 @@ object StreamingPipelinesDemo {
   def main(args: Array[String]): Unit = {
     val conf = ConfigFactory.load
     val envProps: Config = conf.getConfig(args(0))
-    val sparkConf = new SparkConf().setMaster("yarn").setAppName("SiteTraffic")
+    val sparkConf = new SparkConf().setMaster("local").setAppName("SiteTraffic")
     val streamingContext = new StreamingContext(sparkConf, Seconds(envProps.getInt("window")))
     val broadcastConfig = streamingContext.sparkContext.broadcast(envProps)
     val topicsSet = Set("retail_logs")
