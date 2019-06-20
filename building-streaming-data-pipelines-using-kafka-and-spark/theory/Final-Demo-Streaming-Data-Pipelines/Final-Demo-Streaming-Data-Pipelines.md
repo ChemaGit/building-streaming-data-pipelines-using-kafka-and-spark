@@ -275,3 +275,8 @@ object StreamingPipelinesDemo {
 --jars $(echo /external_jars/*.jar | tr ' ' ',') \
 
 kafkaworkshopmapr_2.11-0.1.jar prod
+
+	- Command to run logstash agent: 
+		- sudo /usr/share/logstash/bin/logstash -f /home/cloudera/files/logstash.config
+		- $ start_logs
+		- $ kafka-console-consumer --bootstrap-server quickstart.cloudera:9092 --topic retail_logs --from-beginning
