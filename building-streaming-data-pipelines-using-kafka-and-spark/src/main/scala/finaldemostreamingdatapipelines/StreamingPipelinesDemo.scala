@@ -38,7 +38,8 @@ object StreamingPipelinesDemo {
     val columnFamily1 = "metrics"
     val connection = getHbaseConnection(envProps)
 
-    val table = connection.getTable(TableName.valueOf("/user/mapr/country_count_stream"))
+    //val table = connection.getTable(TableName.valueOf("/hbase/data/training/country_count_stream"))
+    val table = connection.getTable(TableName.valueOf("training:country_count_stream"))
     val row_get = new Get(Bytes.toBytes(rowId.toString))
     //Insert Into Table
     val result = table.get(row_get)
@@ -49,6 +50,7 @@ object StreamingPipelinesDemo {
       rowPut.addColumn(Bytes.toBytes(columnFamily1),Bytes.toBytes(country),Bytes.toBytes(count.toString))
     } else {
       val newCount = Bytes.toString(value).toInt + count
+      println(newCount + ":" + country)
       rowPut.addColumn(Bytes.toBytes(columnFamily1),Bytes.toBytes(country),Bytes.toBytes(newCount.toString))
     }
     table.put(rowPut)
@@ -75,7 +77,7 @@ object StreamingPipelinesDemo {
       "enable.auto.commit" -> (false: java.lang.Boolean)
     )
 
-    val logData: DStream[String] =KafkaUtils.createDirectStream[String, String](
+    val logData: DStream[String] = KafkaUtils.createDirectStream[String, String](
       streamingContext,
       PreferConsistent,
       Subscribe[String, String](topicsSet, kafkaParams)
