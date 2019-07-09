@@ -16,7 +16,7 @@
     		- Use Geoip plugin to add country details from IP Address
 		- Let's edit logstash.config
 
-```json
+```config
 input {
   file {
     path => ["/opt/gen_logs/logs/access.log"]
