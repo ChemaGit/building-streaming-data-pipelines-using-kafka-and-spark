@@ -16,7 +16,7 @@
     		- Use Geoip plugin to add country details from IP Address
 		- Let's edit logstash.config
 
-
+```json
 input {
   file {
     path => ["/opt/gen_logs/logs/access.log"]
@@ -60,6 +60,7 @@ output {
     bootstrap_servers => quickstart.cloudera:9092"
   }
 }
+```
 
 	- Command to run logstash agent: 
 		- sudo /usr/share/logstash/bin/logstash -f logstash.config
