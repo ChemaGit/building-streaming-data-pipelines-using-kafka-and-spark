@@ -74,33 +74,21 @@ output {
 	- HBase Client & Common along with Hadoop Common jars are required to connect and write data to HBase.
 	- Typesafe config jar to externalize the properties
 
-
+```sbt
 name := "StreamingPipelinesDemo"
-
 version := "0.1"
-
 scalaVersion := "2.11.11"
-
 libraryDependencies += "org.apache.spark" % "spark-core_2.11" % "2.3.0"
-
 libraryDependencies += "org.apache.spark" % "spark-sql_2.11" % "2.3.0"
-
 libraryDependencies += "org.apache.spark" % "spark-streaming_2.11" % "2.3.0"
-
 libraryDependencies += "org.apache.spark" %% "spark-streaming-kafka-0-10" % "2.3.0"
-
 libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.1.8"
-
 libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.1.8"
-
 libraryDependencies += "org.apache.kafka" %% "kafka" % "1.1.0"
-
 libraryDependencies += "org.apache.kafka" % "kafka-clients" % "1.1.0"
-
 libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.0"
-
 libraryDependencies += "com.typesafe" % "config" % "1.3.2"
-
+```
 
 # Application Properties (application.properties)
 
@@ -111,25 +99,18 @@ libraryDependencies += "com.typesafe" % "config" % "1.3.2"
     		- Kafka Bootstrap Servers
     		- Streaming Window
 
-
+```properties
 dev.zookeeper = localhost:2181
-
 dev.bootstrap.server = localhost:9092
-
 dev.zookeeper.quorum = localhost
-
 dev.zookeeper.port = 2181
-
 dev.window = 20
-
 prod.zookeeper = nn01.itversity.com:2181,nn02.itversity.com:2181,rm01.itversity.com:2181
-
 prod.zookeeper.quorum = nn01.itversity.com,nn02.itversity.com,rm01.itversity.com
 prod.zookeeper.port = 2181
-
 prod.bootstrap.server = nn01.itversity.com:6667,nn02.itversity.com:6667,rm01.itversity.com:6667
-
 prod.window = 20
+```
 
 # Spark Streaming Code to get Visit Count by Country
 
