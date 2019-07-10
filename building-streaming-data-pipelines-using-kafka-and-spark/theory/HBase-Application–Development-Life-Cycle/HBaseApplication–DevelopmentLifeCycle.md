@@ -405,20 +405,13 @@ prod.execution.mode = yarn-client
 
 ```scala
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
-
 import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory, Put, Table}
-
 import org.apache.hadoop.hbase.util.Bytes
-
 import com.typesafe.config.{Config, ConfigFactory}
-
 import org.apache.hadoop.conf.Configuration
-
 import org.apache.spark.sql.{Row, SparkSession}
 
-
 object NYSELoadSpark {
-
   def getHbaseConnection(conf: Config, env: String): Connection ={
     //Create Hbase Configuration Object
     val hbaseConfig: Configuration = HBaseConfiguration.create()
