@@ -49,20 +49,14 @@
     	- Define merge strategy. It is required to build fat jar so that we can deploy and run on other environments.
     	- Replace build.sbt with below lines of code
 
+```
 name := "HBaseDemo"
-
 version := "0.1"
-
 scalaVersion := "2.11.12"
-
 libraryDependencies += "com.typesafe" % "config" % "1.3.2"
-
 libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.0"
-
 libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.1.2"
-
 libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.1.2"
-
 assemblyMergeStrategy in assembly := {
 
   case m if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
@@ -73,6 +67,7 @@ assemblyMergeStrategy in assembly := {
   case "reference.conf" => MergeStrategy.concat
   case _ => MergeStrategy.first
 }
+```
 
 # Externalize Properties
 
@@ -81,14 +76,12 @@ assemblyMergeStrategy in assembly := {
     		- Make sure build.sbt have dependency related to type safe config
     		- Create new directory under src/main by name resources
     		- Add file called application.properties and add below entries
-
+```properties
 dev.zookeeper.quorum = localhost
-
 dev.zookeeper.port = 2181
-
 prod.zookeeper.quorum = nn01.itversity.com,nn02.itversity.com,rm01.itversity.com
-
 prod.zookeeper.port = 2181
+```
 
 # Put and Get Examples (using sbt console)
 
@@ -108,51 +101,51 @@ prod.zookeeper.port = 2181
         	- Get row using table.get(key)
         	- Read individual cell and pass it to functions such as Bytes.toString to typecast data to original format
 
-			- scala> import org.apache.hadoop.conf.Configuration
-			- scala> import org.apache.hadoop.hbase.client._
-			- scala> import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
-			- scala> import org.apache.hadoop.hbase.util.Bytes
-			- scala> val hbaseConf = HBaseConfiguration.create()
-			- scala> hbaseConf.set("hbase.zookeeper.quorum", "localhost")
-			- scala> hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
-			- scala> val connection = ConnectionFactory.createConnection(hbaseConf)
-			- scala> val table = connection.getTable(TableName.valueOf("training:hbasedemo"))
+```scala
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hbase.client._
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
+import org.apache.hadoop.hbase.util.Bytes
+val hbaseConf = HBaseConfiguration.create()
+hbaseConf.set("hbase.zookeeper.quorum", "localhost")
+hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
+val connection = ConnectionFactory.createConnection(hbaseConf)
+val table = connection.getTable(TableName.valueOf("training:hbasedemo"))
 
-			- scala> val row = new Put(Bytes.toBytes("4"))
-			- scala> row.addColumn(Bytes.toBytes("cf1"), Bytes.toBytes("column2"), Bytes.toBytes("value2"))
-			- scala> row.addColumn(Bytes.toBytes("cf1"), Bytes.toBytes("column4"), Bytes.toBytes("value4"))
-			- scala> table.put(row)
-			- scala> table.close
-			- scala> connection.close
+val row = new Put(Bytes.toBytes("4"))
+row.addColumn(Bytes.toBytes("cf1"), Bytes.toBytes("column2"), Bytes.toBytes("value2"))
+row.addColumn(Bytes.toBytes("cf1"), Bytes.toBytes("column4"), Bytes.toBytes("value4"))
+table.put(row)
+table.close
+connection.close
 
-			- scala> val key = new Get(Bytes.toBytes("4"))
-			- scala> val row = table.get(key)
-			- scala> val v1 = row.getValue(Bytes.toBytes("cf1"), Bytes.toBytes("column2"))
-			- scala> Bytes.toString(v1)
-			- scala> val v2 = row.getValue(Bytes.toBytes("cf1"), Bytes.toBytes("column4"))
-			- scala> Bytes.toString(v2)
-			- scala> table.close
-			- scala> connection.close
+val key = new Get(Bytes.toBytes("4"))
+val row = table.get(key)
+val v1 = row.getValue(Bytes.toBytes("cf1"), Bytes.toBytes("column2"))
+Bytes.toString(v1)
+val v2 = row.getValue(Bytes.toBytes("cf1"), Bytes.toBytes("column4"))
+Bytes.toString(v2)
+table.close
+connection.close
 
-			- scala> val scan = new Scan()
+val scan = new Scan()
 
-			- scala> val scanner = table.getScanner(scan)
-			- scala> var result = scanner.next()
+val scanner = table.getScanner(scan)
+var result = scanner.next()
 
-			- scala> while (result != null) {
-			- scala>   for(cell <- result.rawCells()) {
-			- scala>     println("row key:" + Bytes.toString(CellUtil.cloneRow(cell)) +
-			- scala>       ":column family:" + Bytes.toString(CellUtil.cloneFamily(cell)) +
-			- scala>       ":column name:" + Bytes.toString(CellUtil.cloneQualifier(cell)) +
-			- scala>       ":value:" + Bytes.toString(CellUtil.cloneValue(cell)))
-			- scala>   }
-			- scala>   result = scanner.next()
-			- scala> }
+while (result != null) {
+  for(cell <- result.rawCells()) {
+    println("row key:" + Bytes.toString(CellUtil.cloneRow(cell)) +
+			":column family:" + Bytes.toString(CellUtil.cloneFamily(cell)) +
+			":column name:" + Bytes.toString(CellUtil.cloneQualifier(cell)) +
+			":value:" + Bytes.toString(CellUtil.cloneValue(cell)))
+  }
+  result = scanner.next()
+}
 
-			- scala> table.close
-			- scala> connection.close
-
-
+table.close
+connection.close
+```
 
 # Develop GettingStarted Program
 
@@ -169,21 +162,15 @@ prod.zookeeper.port = 2181
     		- Load zookeeper.quorum and zookeeper.port and create HBase connection
     		- Perform necessary operations to demonstrate
 
-
+```scala
 import com.typesafe.config.{Config, ConfigFactory}
-
 import org.apache.hadoop.conf.Configuration
-
 import org.apache.hadoop.hbase.client._
-
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
-
 import org.apache.hadoop.hbase.util.Bytes
 
 object GettingStarted {
-
   def getHbaseConnection(conf: Config, env: String): Connection ={
-  
     //Create Hbase Configuration Object
     val hbaseConfig: Configuration = HBaseConfiguration.create()
     hbaseConfig.set("hbase.zookeeper.quorum", conf.getString("zookeeper.quorum"))
@@ -197,7 +184,6 @@ object GettingStarted {
   }
 
   def main(args: Array[String]): Unit = {
-
     val env = args(0)
     val conf = ConfigFactory.load.getConfig(env)
     val connection = getHbaseConnection(conf, env)
@@ -213,7 +199,7 @@ object GettingStarted {
     connection.close()
   }
 }
-
+```
 
     	- Program takes 2 arguments, environment to load respective properties and HBase table name
     	- We can go to Run -> Edit Configurations and pass arguments
@@ -247,23 +233,16 @@ object GettingStarted {
     	- For each record build put object and load into HBase table using table object (for performance reasons we can add multiple rows together)
     	- We will also see how to add main class as part of assembly, reassemble the fat jar and run it on the cluster (use sbt assembly)
 
-
+```
 name := "HBaseDemo"
-
 version := "0.1"
-
 scalaVersion := "2.11.12"
-
 libraryDependencies += "com.typesafe" % "config" % "1.3.2"
-
 libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.0"
-
 libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.1.8"
-
 libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.1.8"
 
 assemblyMergeStrategy in assembly := {
-
   case m if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
   case m if m.startsWith("META-INF") => MergeStrategy.discard
   case PathList("javax", "servlet", xs@_*) => MergeStrategy.first
@@ -274,23 +253,18 @@ assemblyMergeStrategy in assembly := {
 }
 
 mainClass in assembly := Some("NYSELoad")
+```
 
-
+```scala
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
-
 import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory, Put, Table}
-
 import org.apache.hadoop.hbase.util.Bytes
-
 import com.typesafe.config.{Config, ConfigFactory}
-
 import org.apache.hadoop.conf.Configuration
-
 import scala.io.Source
 
 
 object NYSELoad {
-
   def getHbaseConnection(conf: Config, env: String): Connection ={
 
     //Create Hbase Configuration Object
@@ -308,13 +282,10 @@ object NYSELoad {
   }
 
   def buildPutList(table: Table, nyseRecord: String, schemaType: String) = {
-
     val nyseAttributes = nyseRecord.split(",")
     
     val put = schemaType match {
-    
       case "thin" => {
-      
         val put = new Put(Bytes.toBytes(
           nyseAttributes(1) + ":" +
             nyseAttributes(0)))
@@ -341,7 +312,6 @@ object NYSELoad {
   }
 
   def readFilesAndLoad(table: Table, nysePath: String, schemaType: String): Unit = {
-
     val nyseData = Source.fromFile(nysePath).getLines()
     nyseData.foreach(record => {
       val row = buildPutList(table, record, schemaType)
@@ -350,7 +320,6 @@ object NYSELoad {
   }
 
   def main(args: Array[String]): Unit = {
-
     val env = args(0)
     val conf = ConfigFactory.load.getConfig(env)
     val connection = getHbaseConnection(conf, env)
@@ -364,7 +333,7 @@ object NYSELoad {
     connection.close
   }
 }
-
+```
 
 # Build, Deploy and Run
 	- Make sure hbase table is created
@@ -395,30 +364,20 @@ object NYSELoad {
 
 # build.sbt
 
+```
 name := "HBaseDemo"
-
 version := "0.1"
-
 scalaVersion := "2.11.12"
-
 libraryDependencies += "com.typesafe" % "config" % "1.3.2"
-
 libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.0"
-
 libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "2.7.0"
-
 libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.1.8"
-
 libraryDependencies += "org.apache.hbase" % "hbase-server" % "1.1.8"
-
 libraryDependencies += "org.apache.hbase" % "hbase-protocol" % "1.1.8"
-
 libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.1.8"
-
 libraryDependencies += "org.apache.spark" % "spark-sql_2.11" % "2.3.0"
 
 assemblyMergeStrategy in assembly := {
-
   case m if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
   case m if m.startsWith("META-INF") => MergeStrategy.discard
   case PathList("javax", "servlet", xs@_*) => MergeStrategy.first
@@ -429,24 +388,22 @@ assemblyMergeStrategy in assembly := {
 }
 
 mainClass in assembly := Some("NYSELoad")
+```
 
 # .properties
 
+```properties
 dev.zookeeper.quorum = localhost
-
 dev.zookeeper.port = 2181
-
 dev.execution.mode = local
-
 prod.zookeeper.quorum = nn01.itversity.com,nn02.itversity.com,rm01.itversity.com
-
 prod.zookeeper.port = 2181
-
 prod.execution.mode = yarn-client
-
+```
 
 # object NYSELoadSpark
 
+```scala
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 
 import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory, Put, Table}
@@ -463,7 +420,6 @@ import org.apache.spark.sql.{Row, SparkSession}
 object NYSELoadSpark {
 
   def getHbaseConnection(conf: Config, env: String): Connection ={
-
     //Create Hbase Configuration Object
     val hbaseConfig: Configuration = HBaseConfiguration.create()
     hbaseConfig.set("hbase.zookeeper.quorum",
@@ -479,11 +435,9 @@ object NYSELoadSpark {
   }
 
   def buildPutList(table: Table, nyseRecord: Row) = {
-
     val put = new Put(Bytes.toBytes(
       nyseRecord.getString(1).substring(0,6)
       + "," + nyseRecord.get(0))) // Key
-
     put.addColumn(Bytes.toBytes("sd"),
       Bytes.toBytes(nyseRecord.get(1) + ",op"),
       Bytes.toBytes(nyseRecord.getString(2)))
@@ -503,16 +457,13 @@ object NYSELoadSpark {
   }
 
   def main(args: Array[String]): Unit = {
-
     val env = args(0)
     val conf = ConfigFactory.load.getConfig(env)
-
     val spark = SparkSession.
       builder.
       master(conf.getString("execution.mode")).
       appName("NYSE Load using Spark").
       getOrCreate()
-
     val nyseData = spark.read.csv(args(1))
     nyseData.foreachPartition(records => {
       val connection = getHbaseConnection(conf, env)
@@ -527,7 +478,7 @@ object NYSELoadSpark {
     })
   }
 }
-
+```
 
 	- spark2-submit \ --class NYSELoadSpark \ --master yarn \ --conf spark.ui.port=4926 \ --jars $(echo /external_jars/*.jar | tr ' ' ',') \ hbasedemo_2.11-0.1.jar prod /public/nyse
 
@@ -603,15 +554,11 @@ object NYSELoadSpark {
     		- Get results by using get or getScanner
     		- Iterate through results
 
-
+```scala
 import org.apache.hadoop.conf.Configuration
-
 import org.apache.hadoop.hbase.client._
-
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
-
 import org.apache.hadoop.hbase.util.Bytes
-
 import org.apache.hadoop.hbase.filter.ColumnRangeFilter
 
 val hbaseConf = HBaseConfiguration.create()
@@ -635,3 +582,5 @@ println(Bytes.toString(row.getValue(Bytes.toBytes("sd"), Bytes.toBytes("20100101
 table.close
 
 connection.close
+```
+
