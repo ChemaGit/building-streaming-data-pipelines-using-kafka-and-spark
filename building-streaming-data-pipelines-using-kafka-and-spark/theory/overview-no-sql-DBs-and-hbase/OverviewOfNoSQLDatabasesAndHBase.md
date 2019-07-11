@@ -32,14 +32,14 @@
 
 		- While indexing and partitioning serves the purpose of scalability in terms of performance, replication serves the purpose of reliability of database. 
 			- Even though we do not cover these terms extensively, it is good to understand all these terms in detail.
-
+````
 $ hbase shell
 hbase> list
 hbase> scan 'nyse:stock_data', {LIMIT => 10}
 hbase> scan 'training:demo'
 hbase> put 'training:demo', 4, 'cf1:column1', 'val1'
 hbase> delete 'training:demo', 4, 'cf1:column1', 'val1'
-
+````
 
 # CRUD Operations
 
