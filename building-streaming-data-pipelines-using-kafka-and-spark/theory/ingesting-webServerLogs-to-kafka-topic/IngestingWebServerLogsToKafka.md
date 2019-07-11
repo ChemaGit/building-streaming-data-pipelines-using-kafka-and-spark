@@ -46,79 +46,51 @@
 
 # multi-sink.conf: A single-node Flume configuration 
 
+```properties
 #Name the components on this agent
-
 a1.sources = r1
-
 a1.sinks = k1 k2
-
 a1.channels = c1 c2
 
 #Describe/configure the source
-
 a1.sources.r1.type = exec
-
 a1.sources.r1.command = tail -F /opt/gen_logs/logs/access.log
 
 #Describe the sink
-
 a1.sinks.k1.type = hdfs
-
 a1.sinks.k1.hdfs.path = hdfs://quickstart.cloudera/user/cloudera/flume/flumekafka
-
 a1.sinks.k1.hdfs.filePrefix = retail
-
 a1.sinks.k1.hdfs.fileSuffix = .txt
-
 a1.sinks.k1.hdfs.rollInterval = 60
-
 a1.sinks.k1.hdfs.rollSize = 0
-
 a1.sinks.k1.hdfs.rollCount = 100
-
 a1.sinks.k1.hdfs.fileType = DataStream
-
 a1.sinks.k2.type = org.apache.flume.sink.kafka.KafkaSink
-
 a1.sinks.k2.kafka.bootstrap.servers = quickstart.cloudera:9092
-
 a1.sinks.k2.kafka.topic = flume-kafka-retail
 
 #Use a channel which buffers events in memory
-
 a1.channels.c1.type = memory
-
 a1.channels.c1.capacity = 1000
-
 a1.channels.c1.transactionCapacity = 100
-
 a1.channels.c2.type = memory
-
 a1.channels.c2.capacity = 1000
-
 a1.channels.c2.transactionCapacity = 100
 
 #Bind the source and sink to the channel
-
 a1.sources.r1.channels = c1 c2
-
 a1.sinks.k1.channel = c1
-
 a1.sinks.k2.channel = c2
+```
 
-
+````
 $ gedit /home/cloudera/flume_demo/flumekafka.conf &
-
 $ kafka-topics --zookeeper quickstart.cloudera:2181 --create --topic flume-kafka-retail --partitions 3 --replication-factor 2
-
 $ kafka-topics --zookeeper quickstart.cloudera:2181 --describe --topic flume-kafka-retail
-
 $ flume-ng agent --name a1 --conf-file /home/cloudera/flume_demo/multi-sink.conf
-
 $ kafka-console-consumer --bootstrap-server quickstart.cloudera:9092 --topic flume-kafka-retail
-
 $ hdfs dfs -ls /user/cloudera/flume/flumekafka
-
+````
 
 # Ingest data into Kafka topic using Kafka Connect
 
@@ -132,21 +104,19 @@ $ hdfs dfs -ls /user/cloudera/flume/flumekafka
 		- We can start the worker by passing 2 arguments - one worker mode and other source type.
 		- We can validate by consuming data using kafka-console-consumer
 
+````
 $ mkdir kafkaconnectdemo
-
 $ cd kafkaconnectdemo
-
 $ cp /opt/cloudera/parcels/KAFKA-4.0.0-1.4.0.0.p0.1/etc/kafka/conf.dist/connect-standalone.properties /home/cloudera/flume_demo/kafkaconnectdemo
-
 $ gedit connect-standalone.properties
+````
 
 	- we override some properties
 		- bootstrap.servers=quickstart.cloudera:9092
-
+````
 $ cp /opt/cloudera/parcels/KAFKA-4.0.0-1.4.0.0.p0.1/etc/kafka/conf.dist/connect-file-source.properties /home/cloudera/flume_demo/kafkaconnectdemo
-
 $ gedit connect-file-source.properties
-
+````
 	- we override some properties
 		- file=/opt/gen_logs/logs/access.log
 		- topic=kafka-connect-retail
