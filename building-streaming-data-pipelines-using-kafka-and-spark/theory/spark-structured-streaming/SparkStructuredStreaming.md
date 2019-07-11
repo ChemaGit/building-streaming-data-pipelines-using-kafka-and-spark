@@ -151,19 +151,14 @@
 		- Add type safe config dependency so that we can externalize properties
     		- Add spark-core and spark-sql dependencies
     		- Replace build.sbt with below lines of code
-
+````properties
 name := "StreamingDemo"
-
 version := "1.0"
-
 scalaVersion := "2.11.12"
-
 libraryDependencies += "com.typesafe" % "config" % "1.3.2"
-
 libraryDependencies += "org.apache.spark" %% "spark-core" % "2.3.0"
-
 libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.3.0"
-
+````
 
 # Externalize Properties
 
@@ -172,21 +167,15 @@ libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.3.0"
     		- Make sure build.sbt have dependency related to type safe config
     		- Create new directory under src/main by name resources
     		- Add file called application.properties and add below entries
-
+````properties
 dev.execution.mode = local
-
 dev.data.host = quickstart.cloudera
-
 dev.data.port = 9999
-
 prod.execution.mode = yarn
-
 //make sure you use appropriate host for which you have access to
-
 prod.data.host = gw02.itversity.com
-
 prod.data.port = 9999
-
+````
 
 # Create GetStreamingDepartmentTraffic Program
 
@@ -200,19 +189,14 @@ prod.data.port = 9999
         	- Process data using Data Frame Operations
         	- Write the output to console (in actual applications we write the output to database)
 
-
+````scala
 import com.typesafe.config.ConfigFactory
-
 import org.apache.spark.sql.SparkSession
-
 import org.apache.spark.sql.functions.{split, to_timestamp, window, count}
-
 import org.apache.spark.sql.streaming.Trigger
 
 object GetStreamingDepartmentTraffic {
-
   def main(args: Array[String]): Unit = {
-
     val conf = ConfigFactory.load.getConfig(args(0))
     val spark = SparkSession.
       builder.
@@ -252,11 +236,9 @@ object GetStreamingDepartmentTraffic {
       start
 
     query.awaitTermination()
-
   }
-
 }
-
+````
 	- $ tail_logs | nc -lk 9999
 	- run the application GetStreamingDepartmentTraffic 
 
@@ -278,7 +260,7 @@ object GetStreamingDepartmentTraffic {
     	- Start streaming tail_logs to web service – tail_logs.sh|nc -lk gw02.itversity.com 9999
     	- Run below command in another session on the server
 
-
+````
 $ tail_logs | nc -lk quickstart.cloudera 44444
 
 $ spark2-submit \
@@ -295,6 +277,7 @@ $ spark2-submit \
   --conf spark.ui.port=12901 \
   --packages com.typesafe:config:1.3.2 \
 target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark_2.11-0.1.jar dev
+````
 
 # Kafka and Spark Structured Streaming – Integration
 
@@ -323,21 +306,15 @@ target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark_2.11-0
     		- Add spark-sql dependencies
     		- Replace build.sbt with below lines of code
 
-
+````properties
 name := "KafkaWorkshop"
-
 version := "1.0"
-
 scalaVersion := "2.11.12"
-
 libraryDependencies += "com.typesafe" % "config" % "1.3.2"
-
 libraryDependencies += "org.apache.kafka" % "kafka-clients" % "1.0.0"
-
 libraryDependencies += "org.apache.spark" % "spark-sql_2.11" % "2.2.0"
-
 libraryDependencies += "org.apache.spark" % "spark-sql-kafka-0-10_2.11" % "2.2.0"
-
+````
 
 # Externalize Properties
 	
@@ -348,23 +325,16 @@ libraryDependencies += "org.apache.spark" % "spark-sql-kafka-0-10_2.11" % "2.2.0
     		- Add file called application.properties and add below entries
     		- It should include information related to Kafka broker
 
-
+````properties
 dev.execution.mode = local
-
 dev.data.host = localhost
-
 dev.data.port = 9999
-
 dev.bootstrap.servers = localhost:9092
-
 prod.execution.mode = yarn
-
 prod.data.host = gw02.itversity.com
-
 prod.data.port = 9999
-
 prod.bootstrap.servers = wn01.itversity.com:6667,wn02.itversity.com:6667
-
+````
 
 # Create GetStreamingDepartmentTraffic Program
 
@@ -380,24 +350,17 @@ prod.bootstrap.servers = wn01.itversity.com:6667,wn02.itversity.com:6667
         	- Write the output to console (in actual applications we write the output to database)
 
 
-
+````scala
 import java.sql.Timestamp
-
 import com.typesafe.config.ConfigFactory
-
 import org.apache.spark.sql.SparkSession
-
 import org.apache.spark.sql.functions._
-
 import org.apache.spark.sql.streaming.Trigger
-
 
 // Created by itversity on 19/05/18.
 
 object GetStreamingDepartmentTrafficKafka {
-
   def main(args: Array[String]): Unit = {
-
     val conf = ConfigFactory.load.getConfig(args(0))
     val spark = SparkSession.
       builder().
@@ -435,24 +398,23 @@ object GetStreamingDepartmentTrafficKafka {
 
     query.awaitTermination()
   }
-
 }
-
-
+````
+````
 spark2-submit \
   --class structuredstreamingintegration.GetStreamingDepartmentTrafficKafka \
   --master yarn \
   --conf spark.ui.port=12901 \
   --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.3.0 \
 bcstructuredstreamingdemo-assembly-1.0.jar prod update
-
+````
 
 # Validate locally
 
-    	- Make sure zookeeper and Kafka broker are running
+    - Make sure zookeeper and Kafka broker are running
 	- $ start_logs
-    	- Start streaming tail_logs to Kafka Broker – tail_logs.sh|kafka-console-producer.sh --broker-list quickstart.cloudera:9092 --topic retail
-    	- Run the program using IDE to make sure we see output in the console
+    - Start streaming tail_logs to Kafka Broker – tail_logs.sh|kafka-console-producer.sh --broker-list quickstart.cloudera:9092 --topic retail
+    - Run the program using IDE to make sure we see output in the console
 
 	- From sbt
 	- $ start_logs
@@ -464,20 +426,18 @@ bcstructuredstreamingdemo-assembly-1.0.jar prod update
 
 # Build, Deploy and Run
 
-    	- Right click on the project and copy path
-    	- Go to terminal and run cd command with the path copied
-    	- Run sbt package
-    	- It will generate jar file for our application
-    	- Copy to the server where you want to deploy
-    	- Make sure zookeeper and Kafka Broker are running
+    - Right click on the project and copy path
+    - Go to terminal and run cd command with the path copied
+    - Run sbt package
+    - It will generate jar file for our application
+    - Copy to the server where you want to deploy
+    - Make sure zookeeper and Kafka Broker are running
 	- $ start_logs
-    	- Start streaming tail_logs to web service – tail_logs.sh|kafka-console-producer.sh --broker-list nn01.itversity.com:6667,nn02.itversity.com:6667,rm01.itversity.com:6667 --topic retail
-    	- Run below command in another session on the server
-
+    - Start streaming tail_logs to web service – tail_logs.sh|kafka-console-producer.sh --broker-list nn01.itversity.com:6667,nn02.itversity.com:6667,rm01.itversity.com:6667 --topic retail
+    - Run below command in another session on the server
+````
 $ sbt package
-
 $ export SPARK_KAFKA_VERSION=0.10
-
 $ spark2-submit \
   --master local \
   --class structuredstreamingintegration.GetStreamingDepartmentTrafficKafka \
@@ -485,4 +445,4 @@ $ spark2-submit \
   --jars "/home/cloudera/.ivy2/cache/com.typesafe/config/bundles/config-1.3.2.jar,/home/cloudera/.ivy2/cache/org.apache.spark/spark-sql_2.11/jars/spark-sql_2.11-2.2.0.jar,/home/cloudera/.ivy2/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-1.0.0.jar,/home/cloudera/.ivy2/cache/org.apache.spark/spark-core_2.11/jars/spark-core_2.11-2.2.0.jar" \
   --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.2.0 \
 target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark_2.11-0.1.jar dev
-
+````
