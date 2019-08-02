@@ -8,7 +8,7 @@ import org.apache.kafka.clients.producer._
 object KafkaProducer {
 	def main(args: Array[String]): Unit = {
 		val conf = ConfigFactory.load
-	  val envConfig = conf.getConfig(args(0))
+	 	 val envConfig = conf.getConfig(args(0))
 
 		val props = new Properties()
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, envConfig.getString("bootstrap.server"))
