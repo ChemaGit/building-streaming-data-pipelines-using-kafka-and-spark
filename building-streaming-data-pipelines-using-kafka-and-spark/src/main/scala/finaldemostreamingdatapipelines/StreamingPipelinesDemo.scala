@@ -21,7 +21,7 @@ object StreamingPipelinesDemo {
 
   // HBase Connectors and Update Function:
 
-  def getHbaseConnection(config: Config): Connection ={
+  def getHbaseConnection(config: Config): Connection = {
     //Create Hbase Configuration Object
     val hBaseConf: Configuration = HBaseConfiguration.create()
     hBaseConf.set("hbase.zookeeper.quorum", config.getString("zookeeper.quorum"))
