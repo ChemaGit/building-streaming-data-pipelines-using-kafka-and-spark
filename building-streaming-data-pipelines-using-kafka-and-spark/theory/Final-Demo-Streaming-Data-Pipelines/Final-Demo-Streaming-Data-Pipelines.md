@@ -1,22 +1,24 @@
-# Final Demo – Streaming Data Pipelines
+## Final Demo – Streaming Data Pipelines
+````text
+- As we understood all the moving parts such as logstash, kafka, spark streaming, hbase etc in building streaming data pipelines, let us see how we can integrate all these things together and come up with solution.
+- Steps:
+- Run Genlogs Script to generate retail e-commerce platform logs
+    - Use Logstash to transform logs into JSON format and also perform some data transformations for ease of use.
+    - Use Spark Streaming to fetch data from kafka and use map reduce to get the country count.
+    - Update HBase Counts
+````
 
-	- As we understood all the moving parts such as logstash, kafka, spark streaming, hbase etc in building streaming data pipelines, let us see how we can integrate all these things together and come up with solution.
-	- Steps:
-		- Run Genlogs Script to generate retail e-commerce platform logs
-    		- Use Logstash to transform logs into JSON format and also perform some data transformations for ease of use.
-    		- Use Spark Streaming to fetch data from kafka and use map reduce to get the country count.
-    		- Update HBase Counts
+### Logstash Configuration:
+````text
+- We will be using logstash to parse the gen_logs file and perform the following transformations:
+        - Parse the apache combined log format and convert it to JSON
+        - Convert Response, Bytes and Response time to integers and float.
+        - Add a parameter rounded timestamp rounded to the nearest minute
+        - Use Geoip plugin to add country details from IP Address
+    - Let's edit logstash.config
+````
 
-# Logstash Configuration:
-
-	- We will be using logstash to parse the gen_logs file and perform the following transformations:
-    		- Parse the apache combined log format and convert it to JSON
-    		- Convert Response, Bytes and Response time to integers and float.
-    		- Add a parameter rounded timestamp rounded to the nearest minute
-    		- Use Geoip plugin to add country details from IP Address
-		- Let's edit logstash.config
-
-```config
+```editorconfig
 input {
   file {
     path => ["/opt/gen_logs/logs/access.log"]
@@ -61,19 +63,21 @@ output {
   }
 }
 ```
+````bash
+# Command to run logstash agent: 
+$ sudo /usr/share/logstash/bin/logstash -f logstash.config
+$ start_logs
+$ kafka-console-consumer --bootstrap-server quickstart.cloudera:9092 --topic retail_logs --from-beginning
+````
 
-	- Command to run logstash agent: 
-		- sudo /usr/share/logstash/bin/logstash -f logstash.config
-		- $ start_logs
-		- $ kafka-console-consumer --bootstrap-server quickstart.cloudera:9092 --topic retail_logs --from-beginning
-
-# Project Dependencies (build.sbt)
-
-	- build.sbt file contains the dependencies which we require for the project.
-	- Spark, Spark Streaming and Spark Streaming Kafka Connector jars for Spark Dependencies
-	- Kafka and Kafka Clients jar as Kafka Dependencies
-	- HBase Client & Common along with Hadoop Common jars are required to connect and write data to HBase.
-	- Typesafe config jar to externalize the properties
+### Project Dependencies (build.sbt)
+````text
+- build.sbt file contains the dependencies which we require for the project.
+- Spark, Spark Streaming and Spark Streaming Kafka Connector jars for Spark Dependencies
+- Kafka and Kafka Clients jar as Kafka Dependencies
+- HBase Client & Common along with Hadoop Common jars are required to connect and write data to HBase.
+- Typesafe config jar to externalize the properties
+````
 
 ```sbt
 name := "StreamingPipelinesDemo"
@@ -91,15 +95,15 @@ libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.0"
 libraryDependencies += "com.typesafe" % "config" % "1.3.2"
 ```
 
-# Application Properties (application.properties)
-
-	- We have defined the following properties for the application:
-		- Zookeeper URLs
-    		- Zookeeper Quorum URL
-    		- Zookeeper Port
-    		- Kafka Bootstrap Servers
-    		- Streaming Window
-
+### Application Properties (application.properties)
+````text
+- We have defined the following properties for the application:
+- Zookeeper URLs
+    - Zookeeper Quorum URL
+    - Zookeeper Port
+    - Kafka Bootstrap Servers
+    - Streaming Window
+````
 ```properties
 dev.zookeeper = localhost:2181
 dev.bootstrap.server = localhost:9092
@@ -113,7 +117,7 @@ prod.bootstrap.server = nn01.itversity.com:6667,nn02.itversity.com:6667,rm01.itv
 prod.window = 20
 ```
 
-# Spark Streaming Code to get Visit Count by Country
+### Spark Streaming Code to get Visit Count by Country
 
 ```scala
 package finaldemostreamingdatapipelines
@@ -213,24 +217,26 @@ object StreamingPipelinesDemo {
 }
 ```
 
-# Build, Deploy and Run
+### Build, Deploy and Run
+````text
+- Right click on the project and copy path
+- Go to terminal and run cd command with the path copied
+- Run sbt package
+- It will generate jar file for our application
+- Copy to the server where you want to deploy
+- Run below command in another session on the server
+````
 
-    	- Right click on the project and copy path
-    	- Go to terminal and run cd command with the path copied
-    	- Run sbt package
-    	- It will generate jar file for our application
-    	- Copy to the server where you want to deploy
-    	- Run below command in another session on the server
-
-```
-/opt/mapr/spark/spark-2.2.1/bin/spark-submit \
+```bash
+$ /opt/mapr/spark/spark-2.2.1/bin/spark-submit \
 --class CountryVisitCount \
 --master yarn  \
 --conf spark.ui.port=4926  \
 --jars $(echo /external_jars/*.jar | tr ' ' ',') \
 kafkaworkshopmapr_2.11-0.1.jar prod
-```
-	- Command to run logstash agent: 
-		- sudo /usr/share/logstash/bin/logstash -f /home/cloudera/files/logstash.config
-		- $ start_logs
-		- $ kafka-console-consumer --bootstrap-server quickstart.cloudera:9092 --topic retail_logs --from-beginning
+
+# Command to run logstash agent: 
+# sudo /usr/share/logstash/bin/logstash -f /home/cloudera/files/logstash.config
+$ start_logs
+$ kafka-console-consumer --bootstrap-server quickstart.cloudera:9092 --topic retail_logs --from-beginning
+````
