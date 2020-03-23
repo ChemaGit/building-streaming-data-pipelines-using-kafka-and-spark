@@ -79,7 +79,7 @@ $ kafka-console-consumer --bootstrap-server quickstart.cloudera:9092 --topic ret
 - Typesafe config jar to externalize the properties
 ````
 
-```buildoutcfg
+```sbtshell
 name := "StreamingPipelinesDemo"
 version := "0.1"
 scalaVersion := "2.11.11"
