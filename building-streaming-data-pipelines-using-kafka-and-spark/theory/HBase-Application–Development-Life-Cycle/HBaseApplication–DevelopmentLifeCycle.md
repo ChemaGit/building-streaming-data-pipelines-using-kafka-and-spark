@@ -1,55 +1,53 @@
-# HBase Application – Development Life Cycle
+## HBase Application – Development Life Cycle
+````text
+- As we understood basics of HBase, now let us look at how we can use Scala as well as Spark Dataframes to build applications using HBase as database.
+    - Revision of HBase Shell (CRUD Operations)
+    - Setup Project
+    - Put and Get examples using Scala
+    - Develop GettingStarted using Scala
+    - Develop NYSELoad using Scala
+    - Develop NYSELoadSpark using Spark Data Frames
+    - Advanced Querying using HBase Shell
+    - Advanced Querying Programmatically
+````
 
-	- As we understood basics of HBase, now let us look at how we can use Scala as well as Spark Dataframes to build applications using HBase as database.
+### Revision of HBase Shell (CRUD Operations)
+````text
+- HBase Shell is CLI to manage tables and run queries for validation and exploratory purposes.
+    - We can list the tables using list command
+    - We can create namespace by using create_namespace command
+    - We can create table by using create ‘namespace:table’, ‘columnfamily’
+        - Create table for GettingStarted – create 'training:hbasedemo', 'cf1'
+        - Create table for NYSELoad – create 'nyse:stock_data', 'sd'
+        - Create table for NYSELoadSpark – create 'nyse:stock_data_wide', 'sd'
+    - We can perform CRUD operations
+        - Create or Update – put
+        - Read – scan or get
+        - Delete – delete
+````
 
-    	- Revision of HBase Shell (CRUD Operations)
-    	- Setup Project
-    	- Put and Get examples using Scala
-    	- Develop GettingStarted using Scala
-    	- Develop NYSELoad using Scala
-    	- Develop NYSELoadSpark using Spark Data Frames
-    	- Advanced Querying using HBase Shell
-    	- Advanced Querying Programmatically
+### Setup Project
+````text
+- Here are the steps involved to setup the project
+    - Make sure necessary tables is created (training:hbasedemo, nyse:stock_data, nyse:stock_data_wide)
+    - Create new project HBaseDemo using IntelliJ
+        - Choose scala 2.11
+        - Choose sbt 0.13.x
+        - Make sure JDK is chosen
+    - Update build.sbt. See below
+    - Define application properties
+````
 
-# Revision of HBase Shell (CRUD Operations)
-
-	- HBase Shell is CLI to manage tables and run queries for validation and exploratory purposes.
-
-
-    	- We can list the tables using list command
-    	- We can create namespace by using create_namespace command
-    	- We can create table by using create ‘namespace:table’, ‘columnfamily’
-        	- Create table for GettingStarted – create 'training:hbasedemo', 'cf1'
-        	- Create table for NYSELoad – create 'nyse:stock_data', 'sd'
-        	- Create table for NYSELoadSpark – create 'nyse:stock_data_wide', 'sd'
-    	- We can perform CRUD operations
-        	- Create or Update – put
-        	- Read – scan or get
-        	- Delete – delete
-
-# Setup Project
-
-	- Here are the steps involved to setup the project
-
-    	- Make sure necessary tables is created (training:hbasedemo, nyse:stock_data, nyse:stock_data_wide)
-    	- Create new project HBaseDemo using IntelliJ
-        	- Choose scala 2.11
-        	- Choose sbt 0.13.x
-        	- Make sure JDK is chosen
-    	- Update build.sbt. See below
-    	- Define application properties
-
-# Dependences (build.sbt)
-
-	- HBase applications are dependent upon Hadoop and hence we need to add dependencies related to Hadoop as well as HBase.
-
-    	- Add type safe config dependency so that we can externalize properties
-    	- Add hadoop dependencies
-    	- Add hbase dependencies
-    	- Define merge strategy. It is required to build fat jar so that we can deploy and run on other environments.
-    	- Replace build.sbt with below lines of code
-
-```
+### Dependences (build.sbt)
+````text
+- HBase applications are dependent upon Hadoop and hence we need to add dependencies related to Hadoop as well as HBase.
+    - Add type safe config dependency so that we can externalize properties
+    - Add hadoop dependencies
+    - Add hbase dependencies
+    - Define merge strategy. It is required to build fat jar so that we can deploy and run on other environments.
+    - Replace build.sbt with below lines of code
+````
+````sbt
 name := "HBaseDemo"
 version := "0.1"
 scalaVersion := "2.11.12"
@@ -58,7 +56,6 @@ libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.0"
 libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.1.2"
 libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.1.2"
 assemblyMergeStrategy in assembly := {
-
   case m if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
   case m if m.startsWith("META-INF") => MergeStrategy.discard
   case PathList("javax", "servlet", xs@_*) => MergeStrategy.first
@@ -67,15 +64,16 @@ assemblyMergeStrategy in assembly := {
   case "reference.conf" => MergeStrategy.concat
   case _ => MergeStrategy.first
 }
-```
+````
 
-# Externalize Properties
-
-	- We need to make sure that application can be run in different environments. It is very important to understand how to externalize properties and pass the information at run time.
-
-    		- Make sure build.sbt have dependency related to type safe config
-    		- Create new directory under src/main by name resources
-    		- Add file called application.properties and add below entries
+### Externalize Properties
+````text
+- We need to make sure that application can be run in different environments. 
+  It is very important to understand how to externalize properties and pass the information at run time.
+    - Make sure build.sbt have dependency related to type safe config
+    - Create new directory under src/main by name resources
+    - Add file called application.properties and add below entries
+````
 ```properties
 dev.zookeeper.quorum = localhost
 dev.zookeeper.port = 2181
@@ -83,24 +81,24 @@ prod.zookeeper.quorum = nn01.itversity.com,nn02.itversity.com,rm01.itversity.com
 prod.zookeeper.port = 2181
 ```
 
-# Put and Get Examples (using sbt console)
-
-	- As we have added necessary dependencies we can use sbt console to launch scala with all dependencies made available to scala to see examples using Scala REPL or CLI.
-
-    	- Launch Scala REPL using sbt console
-    	- Import all the necessary classes or objects or functions
-    	- Create HBase connection object using zookeeper quorum and port
-    	- Create table object by using appropriate table name (make sure table is pre created using hbase shell create 'training:hbasedemo'
-    	- To insert a new cell
-        	- Create put object
-        	- Add necessary columns
-        	- Add or update record using put function on table object
-        	- Validate by running scan 'training:hbasedemo'
-    	- To get one row by using key
-        	- Create get object
-        	- Get row using table.get(key)
-        	- Read individual cell and pass it to functions such as Bytes.toString to typecast data to original format
-
+### Put and Get Examples (using sbt console)
+````text
+- As we have added necessary dependencies we can use sbt console to launch scala with 
+  all dependencies made available to scala to see examples using Scala REPL or CLI.
+    - Launch Scala REPL using sbt console
+    - Import all the necessary classes or objects or functions
+    - Create HBase connection object using zookeeper quorum and port
+    - Create table object by using appropriate table name (make sure table is pre created using hbase shell create 'training:hbasedemo'
+    - To insert a new cell
+        - Create put object
+        - Add necessary columns
+        - Add or update record using put function on table object
+        - Validate by running scan 'training:hbasedemo'
+    - To get one row by using key
+        - Create get object
+        - Get row using table.get(key)
+        - Read individual cell and pass it to functions such as Bytes.toString to typecast data to original format
+````
 ```scala
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.client._
@@ -147,20 +145,22 @@ table.close
 connection.close
 ```
 
-# Develop GettingStarted Program
+### Develop GettingStarted Program
+````text
+- Now let us develop program called GettingStarted, validate using IDE, build and run on cluster.
+````
 
-	- Now let us develop program called GettingStarted, validate using IDE, build and run on cluster.
-
-# Create GettingStarted using IDE
-
-	- We will create object file using IDE to develop the logic.
-	- Create scala program by choosing Scala Class and then type Object
-	- Make sure program is named as GettingStarted
-	- First we need to import necessary APIs
-	- Develop necessary logic 
-		- Get the properties from application.properties
-    		- Load zookeeper.quorum and zookeeper.port and create HBase connection
-    		- Perform necessary operations to demonstrate
+### Create GettingStarted using IDE
+````text
+- We will create object file using IDE to develop the logic.
+- Create scala program by choosing Scala Class and then type Object
+- Make sure program is named as GettingStarted
+- First we need to import necessary APIs
+- Develop necessary logic 
+    - Get the properties from application.properties
+        - Load zookeeper.quorum and zookeeper.port and create HBase connection
+        - Perform necessary operations to demonstrate
+````
 
 ```scala
 import com.typesafe.config.{Config, ConfigFactory}
@@ -200,40 +200,42 @@ object GettingStarted {
   }
 }
 ```
+````text
+- Program takes 2 arguments, environment to load respective properties and HBase table name
+- We can go to Run -> Edit Configurations and pass arguments
+- If dev is passed it will try to connect to HBase installed locally otherwise it will connect to cluster specified in prod.zookeeper.quorum
+````
 
-    	- Program takes 2 arguments, environment to load respective properties and HBase table name
-    	- We can go to Run -> Edit Configurations and pass arguments
-    	- If dev is passed it will try to connect to HBase installed locally otherwise it will connect to cluster specified in prod.zookeeper.quorum
+### Build, Deploy and Run
+````text
+- As development and validation is done, now let us see how we can build and deploy on the cluster.
+    - Right click on the project and copy path
+    - Go to terminal and run cd command with the path copied
+    - Make sure assembly plugin is added
+    - Run sbt assembly
+    - It will generate fat jar. Fat jar is nothing but our application along with all the dependency jars integrated
+    - Copy to the server where you want to deploy
+    - Run using java -jar command – java -jar HBaseDemo-assembly-0.1.jar prod training:hbasedemo
+- Run from sbt:
+````
+````sbtshell
+sbt
+sbt> compile
+sbt> package
+sbt> runMain hbaseapplicationdevelopmentlifecycle.hbasedemo.GettingStarted dev training:hbasedemo
+````
 
-
-# Build, Deploy and Run
-
-	- As development and validation is done, now let us see how we can build and deploy on the cluster.
-
-    	- Right click on the project and copy path
-    	- Go to terminal and run cd command with the path copied
-    	- Make sure assembly plugin is added
-    	- Run sbt assembly
-    	- It will generate fat jar. Fat jar is nothing but our application along with all the dependency jars integrated
-    	- Copy to the server where you want to deploy
-    	- Run using java -jar command – java -jar HBaseDemo-assembly-0.1.jar prod training:hbasedemo
-	- Run from sbt:
-		- $ sbt
-		- sbt> compile
-		- sbt> package
-		- sbt> runMain hbaseapplicationdevelopmentlifecycle.hbasedemo.GettingStarted dev training:hbasedemo
-
-# Develop NYSELoad using Scala
-
-	- As part of this program we will see how we can read data from a file and load data into nyse:stock_data using Scala as programming language using HBase APIs.
-
-    	- Read data from file (we will only process one file at a time)
-    	- Create HBase Connection
-    	- Create table object for nyse:stock_data
-    	- For each record build put object and load into HBase table using table object (for performance reasons we can add multiple rows together)
-    	- We will also see how to add main class as part of assembly, reassemble the fat jar and run it on the cluster (use sbt assembly)
-
-```
+### Develop NYSELoad using Scala
+````text
+- As part of this program we will see how we can read data from a file and 
+  load data into nyse:stock_data using Scala as programming language using HBase APIs.
+    - Read data from file (we will only process one file at a time)
+    - Create HBase Connection
+    - Create table object for nyse:stock_data
+    - For each record build put object and load into HBase table using table object (for performance reasons we can add multiple rows together)
+    - We will also see how to add main class as part of assembly, reassemble the fat jar and run it on the cluster (use sbt assembly)
+````
+```sbt
 name := "HBaseDemo"
 version := "0.1"
 scalaVersion := "2.11.12"
@@ -251,7 +253,6 @@ assemblyMergeStrategy in assembly := {
   case "reference.conf" => MergeStrategy.concat
   case _ => MergeStrategy.first
 }
-
 mainClass in assembly := Some("NYSELoad")
 ```
 
@@ -335,36 +336,45 @@ object NYSELoad {
 }
 ```
 
-# Build, Deploy and Run
-	- Make sure hbase table is created
-	- create 'nyse:stock_data_thin', 'sd'
-	- Run using Java: $ java -jar \ target/scala-2.11/HBaseDemo-assembly-0.1.jar \ prod /data/nyse/NYSE_2016.txt nyse:stock_data_thin thin
-	- Run from sbt:
-		- $ sbt
-		- sbt> compile
-		- sbt> package
-		- sbt> runMain hbaseapplicationdevelopmentlifecycle.hbasedemo.NYSELoad dev /home/cloudera/files/NYSE_2017.txt nyse:stock_data_thin thin
-		
-    - Under directory project we have to create the assembly.sbt file and add the depencency addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.6")
-    - now from command line run $ sbt assembly
-    - /target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark-assembly-0.1.jar 
-    - run the application
-    - $ sbt assembly
-    - $ java -jar target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark-assembly-0.1.jar dev /home/cloudera/files/NYSE_2010.txt nyse:stock_data_thin thin		
+### Build, Deploy and Run
+````text
+- Make sure hbase table is created
+- create 'nyse:stock_data_thin', 'sd'
+- Run using Java: 
+````
+````bash
+$ java -jar \ target/scala-2.11/HBaseDemo-assembly-0.1.jar \ prod /data/nyse/NYSE_2016.txt nyse:stock_data_thin thin
+````
+````sbtshell
+# Run from sbt:
+sbt
+sbt> compile
+sbt> package
+sbt> runMain hbaseapplicationdevelopmentlifecycle.hbasedemo.NYSELoad dev /home/cloudera/files/NYSE_2017.txt nyse:stock_data_thin thin
+````
+````bash
+# Under directory project we have to create the assembly.sbt file and add the depencency addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.6")
+# now from command line run:
+$ sbt assembly /target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark-assembly-0.1.jar 
+# run the application
+$ sbt assembly
+$ java -jar target/scala-2.11/building-streaming-data-pipelines-using-kafka-and-spark-assembly-0.1.jar dev /home/cloudera/files/NYSE_2010.txt nyse:stock_data_thin thin		
+````
 
-# Develop NYSELoadSpark using Spark Data Frames
+### Develop NYSELoadSpark using Spark Data Frames
+````text
+- As part of this program we will see how we can read data from a directory and load data into 
+  nyse:stock_data_wide using Spark Data Frames and HBase APIs with Scala as programming language.
+    - Update build.sbt with spark dependencies
+        - Load entire NYSE data from files into HBase on the cluster
+        - Create HBase Connection
+        - Create table object for nyse:stock_data_wide
+        - For each record build put object and load into HBase table using table object (for performance reasons we can add multiple rows together)
+        - Use Spark Dataframe APIs to read data and then to write into HBase table.
+````
 
-	- As part of this program we will see how we can read data from a directory and load data into nyse:stock_data_wide using Spark Data Frames and HBase APIs with Scala as programming language.
-		- Update build.sbt with spark dependencies
-    		- Load entire NYSE data from files into HBase on the cluster
-    		- Create HBase Connection
-    		- Create table object for nyse:stock_data_wide
-    		- For each record build put object and load into HBase table using table object (for performance reasons we can add multiple rows together)
-    		- Use Spark Dataframe APIs to read data and then to write into HBase table.
-
-# build.sbt
-
-```
+### build.sbt
+```sbt
 name := "HBaseDemo"
 version := "0.1"
 scalaVersion := "2.11.12"
@@ -390,8 +400,7 @@ assemblyMergeStrategy in assembly := {
 mainClass in assembly := Some("NYSELoad")
 ```
 
-# .properties
-
+### .properties
 ```properties
 dev.zookeeper.quorum = localhost
 dev.zookeeper.port = 2181
@@ -401,8 +410,7 @@ prod.zookeeper.port = 2181
 prod.execution.mode = yarn-client
 ```
 
-# object NYSELoadSpark
-
+### object NYSELoadSpark
 ```scala
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory, Put, Table}
@@ -472,81 +480,86 @@ object NYSELoadSpark {
   }
 }
 ```
+````bash
+$ spark2-submit \ 
+--class NYSELoadSpark \ 
+--master yarn \ 
+--conf spark.ui.port=4926 \ 
+--jars $(echo /external_jars/*.jar | tr ' ' ',') \ hbasedemo_2.11-0.1.jar prod /public/nyse
+````
+````sbtshell
+# Run from sbt:
+sbt
+sbt> compile
+sbt> package
+sbt> runMain hbaseapplicationdevelopmentlifecycle.hbasedemo.NYSELoadSpark dev /home/cloudera/files/NYSE_2015.txt
+````
 
-	- spark2-submit \ --class NYSELoadSpark \ --master yarn \ --conf spark.ui.port=4926 \ --jars $(echo /external_jars/*.jar | tr ' ' ',') \ hbasedemo_2.11-0.1.jar prod /public/nyse
+### Advanced Querying using HBase Shell (filters)
+````text
+- Let us deep dive into advanced querying capabilities using HBase shell.
+    - We can limit number of rows as part of scan and number of cells as part of get (using limit)
+    - We can perform partial scan using startrow and endrow
+    - We can project the desired fields as part of scan
+    - There are bunch of filters available to query the data
+    - Some filters are available as part of scan, some of them are available as part of get, 
+      while some of them are applicable to both scan as well as get.
 
-	- Run from sbt:
-		- $ sbt
-		- sbt> compile
-		- sbt> package
-		- sbt> runMain hbaseapplicationdevelopmentlifecycle.hbasedemo.NYSELoadSpark dev /home/cloudera/files/NYSE_2015.txt
+- count 'nyse:stock_data_thin'
 
+- To get first 10 records
+    - scan 'nyse:stock_data_thin', {LIMIT => 10}
 
-# Advanced Querying using HBase Shell (filters)
+- Partial Scan example (using STARTROW and ENDROW)
+    - scan 'nyse:stock_data_thin', {STARTROW => '201601:A', ENDROW => '201601:B'}
 
-	- Let us deep dive into advanced querying capabilities using HBase shell.
-    		- We can limit number of rows as part of scan and number of cells as part of get (using limit)
-    		- We can perform partial scan using startrow and endrow
-    		- We can project the desired fields as part of scan
-    		- There are bunch of filters available to query the data
-    		- Some filters are available as part of scan, some of them are available as part of get, while some of them are applicable to both scan as well as get.
+- Get all rows with prefix
+- To get all the rows which have prefix 200401
+- This filter is not available on get (we have ColumnPrefixFilter)
+    - scan 'nyse:stock_data_thin', {FILTER => "PrefixFilter('201601')", LIMIT => 10}
 
+- Using partial scan with STARTROW/ENDROW will perform better
+    - scan 'nyse:stock_data_thin', {FILTER => "PrefixFilter('201601')", LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
 
-	- count 'nyse:stock_data_thin'
+- Projecting required columns using COLUMNS
+    - scan 'nyse:stock_data_thin', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10}
 
-	- To get first 10 records
-		- scan 'nyse:stock_data_thin', {LIMIT => 10}
+- Using partial scan with STARTROW/ENDROW will perform better
+    - scan 'nyse:stock_data_thin', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
 
-	- Partial Scan example (using STARTROW and ENDROW)
-		- scan 'nyse:stock_data_thin', {STARTROW => '201601:A', ENDROW => '201601:B'}
+    - get 'nyse:stock_data_thin', '201601:A', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10}
 
-	- Get all rows with prefix
-	- To get all the rows which have prefix 200401
-	- This filter is not available on get (we have ColumnPrefixFilter)
-		- scan 'nyse:stock_data_thin', {FILTER => "PrefixFilter('201601')", LIMIT => 10}
+- Projecting required columns using column prefix
+- We can either use ColumnPrefixFilter or MultipleColumnPrefixFilter
+    - scan 'nyse:stock_data_thin', {FILTER => "ColumnPrefixFilter('20160129')", LIMIT => 10}
 
-	- Using partial scan with STARTROW/ENDROW will perform better
-		- scan 'nyse:stock_data_thin', {FILTER => "PrefixFilter('201601')", LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
+- Using partial scan with STARTROW/ENDROW and then ColumnPrefixFilter will perform better in this case
+    - scan 'nyse:stock_data_thin', {FILTER => "ColumnPrefixFilter('20160129')", STARTROW => '201601:A', ENDROW => '201601:ZZZZ', LIMIT => 10}
 
-	- Projecting required columns using COLUMNS
-		- scan 'nyse:stock_data_thin', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10}
+    - get 'nyse:stock_data_thin', '201601:A', {FILTER => "ColumnPrefixFilter('20160129')"}
+    - get 'nyse:stock_data_thin', '201601:A', {FILTER => "MultipleColumnPrefixFilter('20160129', '20160128')"}
 
-	- Using partial scan with STARTROW/ENDROW will perform better
-		- scan 'nyse:stock_data_thin', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
+- Projecting required columns using range
+- To get all the rows from 20040110 to 20040115
+    - scan 'nyse:stock_data_thin', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)", LIMIT => 10}
 
-		- get 'nyse:stock_data_thin', '201601:A', {COLUMNS => ['sd:20160129,lp', 'sd:20160129,hp'], LIMIT => 10}
+- Using partial scan with STARTROW/ENDROW and then ColumnRangeFilter will perform better in this case
+    - scan 'nyse:stock_data_thin', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)", LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
 
-	- Projecting required columns using column prefix
-	- We can either use ColumnPrefixFilter or MultipleColumnPrefixFilter
-		- scan 'nyse:stock_data_thin', {FILTER => "ColumnPrefixFilter('20160129')", LIMIT => 10}
+- get 'nyse:stock_data_thin', '201601:A', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)"}
+````
 
-	- Using partial scan with STARTROW/ENDROW and then ColumnPrefixFilter will perform better in this case
-		- scan 'nyse:stock_data_thin', {FILTER => "ColumnPrefixFilter('20160129')", STARTROW => '201601:A', ENDROW => '201601:ZZZZ', LIMIT => 10}
-
-		- get 'nyse:stock_data_thin', '201601:A', {FILTER => "ColumnPrefixFilter('20160129')"}
-		- get 'nyse:stock_data_thin', '201601:A', {FILTER => "MultipleColumnPrefixFilter('20160129', '20160128')"}
-
-	- Projecting required columns using range
-	- To get all the rows from 20040110 to 20040115
-		- scan 'nyse:stock_data_thin', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)", LIMIT => 10}
-
-	- Using partial scan with STARTROW/ENDROW and then ColumnRangeFilter will perform better in this case
-		- scan 'nyse:stock_data_thin', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)", LIMIT => 10, STARTROW => '201601:A', ENDROW => '201601:ZZZZ'}
-
-	- get 'nyse:stock_data_thin', '201601:A', {FILTER => "ColumnRangeFilter('20160125,cp', true, '20160129,v', true)"}
-
-
-# Advanced Querying Programmatically
-
-	- Let us see how we can develop programs using filtering.
-    		- Almost all the queries which we have executed earlier can be written as programs
-    		- Create HBase configuration and then connection object
-    		- Create table object
-    		- Create get or scan object depending up on the filter you are trying to use
-    		- Create filter object
-    		- Get results by using get or getScanner
-    		- Iterate through results
-
+### Advanced Querying Programmatically
+````text
+- Let us see how we can develop programs using filtering.
+    - Almost all the queries which we have executed earlier can be written as programs
+    - Create HBase configuration and then connection object
+    - Create table object
+    - Create get or scan object depending up on the filter you are trying to use
+    - Create filter object
+    - Get results by using get or getScanner
+    - Iterate through results
+````
 ```scala
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.client._
@@ -555,25 +568,18 @@ import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.filter.ColumnRangeFilter
 
 val hbaseConf = HBaseConfiguration.create()
-
 hbaseConf.set("hbase.zookeeper.quorum", "quickstart.cloudera")
-
 hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
 
 val connection = ConnectionFactory.createConnection(hbaseConf)
-
 val table = connection.getTable(TableName.valueOf("nyse:stock_data_thin"))
-
 val get = new Get(Bytes.toBytes("20100101,AB"))
-
 val filter = new ColumnRangeFilter(Bytes.toBytes("20100101,cp"), true, Bytes.toBytes("20100101,cp"), true)
-
 val row = table.get(get)
 
 println(Bytes.toString(row.getValue(Bytes.toBytes("sd"), Bytes.toBytes("20100101,cp"))))
 
 table.close
-
 connection.close
 ```
 
